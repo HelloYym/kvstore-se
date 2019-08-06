@@ -9,8 +9,8 @@
 * make
 
 ### run - 在build目录执行
-* 启动存储节点：example/kv_store/example_store tcp://[127.0.0.1](/Users/qiwenchao/Library/Application Support/typora-user-images/CE102EAD-8831-4B87-AFD0-EFA9A82AD36B/127.0.0.1) data clear
-* 测试计算节点:   test/tester 16 16 src/kv_service/[libkv_service.so](/Users/qiwenchao/Library/Application Support/typora-user-images/79540DE2-86D1-40E2-B981-D6036C076060/libkv_service.so) tcp://127.0.0.1
+* 启动存储节点: example/kv_store/example_store tcp://127.0.0.1 data clear
+* 测试计算节点: test/tester 16 16 src/kv_service/libkv_service.so tcp://127.0.0.1
 
 ### 其他
 1 参赛者可以使用其他的通信协议，但需要自行继承到cmake编译配置中；
