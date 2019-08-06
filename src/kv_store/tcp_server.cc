@@ -112,19 +112,12 @@ void TcpServer::processRecv(int fd, std::shared_ptr<RpcProcess> process) {
             int rc = nn_send(fd, buf, len, 0);
             if (rc < 0) {
                 NN_LOG(ERROR, "nn_send with fd: " << fd);
-            } else {
-                cv.notify_one();
-            }
+            } 
         };
 
     char * recv_buf;
-    //local process no more than 50ms, or client will retry
-    std::chrono::milliseconds duration(50); 
 
     while(1) {
-        std::unique_lock<std::mutex> lock(mtx);
-        cv.wait_for(lock, duration);
-
         int rc = nn_recv(fd, &recv_buf, NN_MSG, 0);
         if (rc < 0) {
             NN_LOG(ERROR, "nn_recv with fd: " << fd);

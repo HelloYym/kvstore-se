@@ -20,9 +20,34 @@ bool RpcProcess::Insert(char * buf, int len, DoneCbFunc cb) {
         KV_LOG(ERROR) << "crc error, expect: " << rpc.crc << " get: " << sum;
         return false;
     } else {
-        std::lock_guard<std::mutex> lock(mutex_);
-        reqQ_.emplace_back(buf, cb);
-        cv_.notify_one();
+
+        switch(rpc.type) {
+            case KV_OP_META_APPEND:
+                processAppend(meta_, buf, cb);
+                break;
+
+            case KV_OP_META_GET:
+                processGet(meta_, buf, cb);
+                break;
+
+            case KV_OP_DATA_APPEND:
+                processAppend(data_, buf, cb);
+                break;
+
+            case KV_OP_DATA_GET:
+                processGet(data_, buf, cb);
+                break;
+
+            case KV_OP_CLEAR:
+                //TODO: clear local data
+                break;
+
+            default:
+                LOG(ERROR) << "unknown rpc type: " << rpc.type;
+                cb(nullptr, 0);
+                break;
+        }
+
         return true;
     }
 }
@@ -43,59 +68,12 @@ bool RpcProcess::Run(const char * dir, bool clear) {
         meta_.Init(dir_.Buf(), meta_ext);
     }
 
-    std::thread th(&RpcProcess::process, this);
-    th.detach();
 }
 
 void RpcProcess::Stop() {
     run_ = false;
     sleep(1);
 }
-
-bool RpcProcess::process() {
-    run_ = true;
-    while(run_) {
-        std::list<PacketInfo> packets;
-        do {
-            std::unique_lock<std::mutex> lock(mutex_);
-            cv_.wait(lock, [&] ()->bool { return !reqQ_.empty() || !run_; });
-            packets = std::move(reqQ_);
-        } while(0);
-
-        for(auto packet: packets) {
-            auto & req = *(Packet *)packet.buf;
-
-            switch(req.type) {
-            case KV_OP_META_APPEND:
-                processAppend(meta_, packet.buf, packet.cb);
-                break;
-
-            case KV_OP_META_GET:
-                processGet(meta_, packet.buf, packet.cb);
-                break;
-
-            case KV_OP_DATA_APPEND:
-                processAppend(data_, packet.buf, packet.cb);
-                break;
-
-            case KV_OP_DATA_GET:
-                processGet(data_, packet.buf, packet.cb);
-                break;
-
-            case KV_OP_CLEAR:
-                //TODO: clear local data
-                break;
-
-            default:
-                LOG(ERROR) << "unknown rpc type: " << req.type;
-                packet.cb(nullptr, 0);
-                break;
-            }
-            delete [] packet.buf;
-        }
-    }
-}
-
 
 void RpcProcess::processAppend(DataMgr & target, char * buf, DoneCbFunc cb) {
     auto & req = *(Packet *) buf;
