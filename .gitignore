@@ -1,0 +1,52 @@
+log
+*.log
+*.o
+*.a
+out
+.nfs*
+
+# possible build dir
+Debug/
+Release/
+RelWithDebInfo/
+MinSizeRel/
+build/
+.build/
+.vscode/
+
+# For cscope/ctags
+cscope.in.out
+cscope.out
+cscope.po.out
+cscope.files
+tags
+GTAGS
+GPATH
+GRTAGS
+
+# For vim
+.ycm_extra_conf.py
+vim_session
+*.swp
+*.swo
+*.swn
+
+# For kdiff3 compare auto generated files
+*.orig
+
+# For Visual Studio Ignore Files
+obj/
+.vs/
+*.sln
+*.vcxproj
+*.vcxproj.user
+.cproject
+.project
+.settings/
+.idea/
+
+#CMake
+CMakeCache.txt
+CMakeFiles/
+cmake-build-debug/
+cmake-build-release/
