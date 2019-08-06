@@ -9,8 +9,9 @@
 * make
 
 ### run - 在build目录执行
-* 启动存储节点: example/kv_store/example_store tcp://127.0.0.1 data clear
-* 测试计算节点: test/tester 16 16 src/kv_service/libkv_service.so tcp://127.0.0.1
+* 启动存储节点:  src/kv_store/kv_store tcp://127.0.0.1 data clear
+* 测试计算节点:  test/tester 10 1 src/kv_service/libkv_service.so  tcp://127.0.0.1
+
 
 ### 其他
 1 参赛者可以使用其他的通信协议，但需要自行继承到cmake编译配置中；

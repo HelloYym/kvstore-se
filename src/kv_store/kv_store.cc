@@ -1,10 +1,11 @@
 #include <iostream>
 #include <string.h>
-#include <easylogging++.h>
+
+#include "rpc_process.h"
+#include "tcp_server.h"
+#include "utils.h"
 
 INITIALIZE_EASYLOGGINGPP;
-
-#define KV_LOG(level) LOG(level) << "[" << __FUNCTION__ << ":" << __LINE__ << "] "
 
 const char *exeName(const char *name) {
     int pos = 0;
@@ -70,19 +71,24 @@ int main(int argc, char * argv[]) {
             clear = true;
         }
     }
-
     KV_LOG(INFO) << "[" << name << "] local store demo ...";
-    KV_LOG(INFO) << "  >> bind host : " << host;
-    KV_LOG(INFO) << "  >> datax dir : " << dir;
-    KV_LOG(INFO) << "  >> clear dir : " << clear;
+    KV_LOG(INFO) << "  >> bind  host : " << host;
+    KV_LOG(INFO) << "  >> data  dir  : " << dir;
+    KV_LOG(INFO) << "  >> clear dir  : " << clear;
 
-    ////////////////////////////////////////////////////
-    //TODO: your code
-    int ret = 0;
-    std::cout << "No user code exists!!!" << std::endl;
+
+    auto rpc_process= std::make_shared<RpcProcess>(dir);
+    rpc_process->Run(dir, clear);
+
+    char url[256];
+    strcpy(url, host);
+    strcat(url, ":9527");
+
+    int ret = TcpServer::Run((const char *)url, rpc_process->GetPtr());
 
     if (ret != -1) {
         pause();
+        TcpServer::StopAll();
     }
 
     return ret;
