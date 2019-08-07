@@ -33,7 +33,14 @@ public:
     bool init(const char * host, int id) {
         printf("Client init %s, %d\n", host, id);
         tcpClient = new TcpClient();
-        tcpClient->connect(host);
+
+        char url[256];
+        strcpy(url, host);
+
+        int port = 9500 + id;
+        strcat(url, ":");
+        strcat(url, std::to_string(port).c_str());
+        tcpClient->connect(url);
         this->id = id;
         return true;
     }
