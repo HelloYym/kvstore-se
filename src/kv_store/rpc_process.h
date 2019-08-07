@@ -34,7 +34,7 @@ public:
         Stop();
     }
 
-    bool Insert(int threadId, char * buf, int len, DoneCbFunc cb);
+    bool Insert(int& threadId, char * buf, int len, DoneCbFunc cb);
 
     bool Run(const char * dir, bool clear);
 
@@ -51,15 +51,15 @@ public:
 protected:
     bool process();
 
-    void processPutKV(int threadId, char * buf, DoneCbFunc cb);
+    void processPutKV(int& threadId, char * buf, DoneCbFunc cb);
 
-    void processGetV(int threadId, char * buf, DoneCbFunc cb);
+    void processGetV(char * buf, DoneCbFunc cb);
 
-    void processResetKeyPosition(int threadId, char * buf, DoneCbFunc cb);
+    void processResetKeyPosition(int& threadId, char * buf, DoneCbFunc cb);
 
-    void processGetK(int threadId, char * buf, DoneCbFunc cb);
+    void processGetK(int& threadId, char * buf, DoneCbFunc cb);
 
-    void processRecoverKeyPosition(int threadId, char * buf, DoneCbFunc cb);
+    void processRecoverKeyPosition(int& threadId, char * buf, DoneCbFunc cb);
 
 
 protected:

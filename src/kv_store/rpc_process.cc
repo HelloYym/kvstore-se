@@ -4,7 +4,7 @@
 #include <thread>
 #include "utils.h"
 
-bool RpcProcess::Insert(int threadId, char * buf, int len, DoneCbFunc cb) {
+bool RpcProcess::Insert(int& threadId, char * buf, int len, DoneCbFunc cb) {
     if (buf == nullptr || len < PACKET_HEADER_SIZE) {
         KV_LOG(ERROR) << "insert to RpcProcess failed. size: " << len;
         return false;
@@ -31,7 +31,7 @@ bool RpcProcess::Insert(int threadId, char * buf, int len, DoneCbFunc cb) {
             break;
 
         case KV_OP_GET_V:
-            processGetV(threadId, buf, cb);
+            processGetV(buf, cb);
             break;
 
         case KV_OP_RESET_K:
@@ -77,7 +77,7 @@ void RpcProcess::Stop() {
     sleep(1);
 }
 
-void RpcProcess::processPutKV(int threadId, char * buf, DoneCbFunc cb) {
+void RpcProcess::processPutKV(int& threadId, char * buf, DoneCbFunc cb) {
     // buf解析为packet
     auto & req = *(Packet *) buf;
 
@@ -115,7 +115,7 @@ void RpcProcess::processPutKV(int threadId, char * buf, DoneCbFunc cb) {
     delete [] ret_buf;
 }
 
-void RpcProcess::processGetV(int threadId, char * buf, DoneCbFunc cb) {
+void RpcProcess::processGetV(char * buf, DoneCbFunc cb) {
     auto & req = *(Packet *)buf;
 
     // 请求只有一个offset参数
@@ -124,9 +124,10 @@ void RpcProcess::processGetV(int threadId, char * buf, DoneCbFunc cb) {
         return;
     }
 
-    auto offset = *(uint32_t *)req.buf;
+    uint32_t compress = *(uint32_t *)req.buf;
+    int threadId = (compress & 0xF0000000) >> 28;
+    int offset = (compress & 0x0FFFFFFF);
 
-    // 目前取value是不带key的
     KVString val;
     kv_engines.getV(val, offset, threadId);
 
@@ -148,7 +149,7 @@ void RpcProcess::processGetV(int threadId, char * buf, DoneCbFunc cb) {
     delete [] ret_buf;
 }
 
-void RpcProcess::processResetKeyPosition(int threadId, char * buf, DoneCbFunc cb) {
+void RpcProcess::processResetKeyPosition(int& threadId, char * buf, DoneCbFunc cb) {
     auto & req = *(Packet *)buf;
 
     kv_engines.resetKeyPosition(threadId);
@@ -167,19 +168,11 @@ void RpcProcess::processResetKeyPosition(int threadId, char * buf, DoneCbFunc cb
     delete [] ret_buf;
 }
 
-void RpcProcess::processGetK(int threadId, char * buf, DoneCbFunc cb) {
+void RpcProcess::processGetK(int& threadId, char * buf, DoneCbFunc cb) {
     auto & req = *(Packet *)buf;
 
-    // 请求只有一个offset参数
-    if (req.len < sizeof(int32_t) ) {
-        KV_LOG(ERROR) << "key index size error: " << req.len;
-        return;
-    }
-
-    auto offset = *(uint32_t *)req.buf;
-
     KVString key;
-    kv_engines.getK(key, offset, threadId);
+    bool has_key = kv_engines.getK(key, threadId);
 
     int key_size = key.Size();
 
@@ -190,6 +183,7 @@ void RpcProcess::processGetK(int threadId, char * buf, DoneCbFunc cb) {
     memcpy(reply.buf, key.Buf(), key_size);
 
     reply.len   = key_size;
+    if (!has_key) reply.len = 0;
     reply.sn    = req.sn;
     reply.type  = req.type;
     reply.crc   = reply.Sum();
@@ -199,7 +193,7 @@ void RpcProcess::processGetK(int threadId, char * buf, DoneCbFunc cb) {
     delete [] ret_buf;
 }
 
-void RpcProcess::processRecoverKeyPosition(int threadId, char * buf, DoneCbFunc cb) {
+void RpcProcess::processRecoverKeyPosition(int& threadId, char * buf, DoneCbFunc cb) {
     auto & req = *(Packet *)buf;
 
     if (req.len < sizeof(int32_t) ) {

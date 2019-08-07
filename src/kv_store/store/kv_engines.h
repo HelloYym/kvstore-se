@@ -25,7 +25,7 @@ public:
 
     //根据线程id 和 offset 获取 key
     //返回key是否读到末尾，false为末尾
-    bool getK(KVString & key, int offset, int threadId);
+    bool getK(KVString & key, int threadId);
 
     void recoverKeyPosition(int sum, int threadId);
 

@@ -61,7 +61,7 @@ public:
         kvLog->resetKeyPosition();
     }
 
-    bool getK(KVString & key, int offset) {
+    bool getK(KVString & key) {
         return kvLog->getKey(key);
     }
 
