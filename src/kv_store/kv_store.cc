@@ -91,12 +91,9 @@ int main(int argc, char * argv[]) {
 
         int ret = TcpServer::Run((const char *)url, threadId, rpc_process->GetPtr());
 
-        if (ret != -1) {
-            pause_a();
-            TcpServer::StopAll();
-        }
-
     }
 
+    pause_a();
+    TcpServer::StopAll();
     return 1;
 }
