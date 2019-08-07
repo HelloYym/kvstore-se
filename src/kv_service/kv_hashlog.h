@@ -11,7 +11,7 @@
 #include <mutex>
 
 #include "kv_hash.h"
-#include "utils.h"
+#include "params.h"
 
 using namespace std;
 

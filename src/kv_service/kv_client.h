@@ -19,6 +19,8 @@
 #include "kv_hashlog.h"
 #include "kv_string.h"
 #include "tcp_client.h"
+#include "params.h"
+#include "utils.h"
 
 using namespace std;
 
