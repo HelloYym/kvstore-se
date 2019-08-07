@@ -14,6 +14,7 @@
 #include <mutex>
 #include "params.h"
 #include <limits.h>
+#include "kv_string.h"
 
 class KVLog {
 private:
@@ -108,10 +109,11 @@ public:
         }
     }
 
-    inline bool getKey(u_int64_t & key) {
-        key = *(keyBuffer + keyBufferPosition);
+    inline bool getKey(KVString & key) {
+        uint64_t k = *(keyBuffer + keyBufferPosition);
+        key = KVString((char *)(keyBuffer + keyBufferPosition), 8);
         keyBufferPosition++;
-        return key != 0 || (key == 0 && *(keyBuffer + keyBufferPosition) != 0);
+        return k != 0 || (k == 0 && *(keyBuffer + keyBufferPosition) != 0);
     }
 
     inline void resetKeyPosition() {
