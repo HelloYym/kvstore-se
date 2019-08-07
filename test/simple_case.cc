@@ -144,12 +144,20 @@ static auto buildKey = [](int64_t idx)->KVString {
     return KVString((const char *)&idx, sizeof(idx));
 };
 
+//static auto buildVal = [](int idx)->KVString {
+//    char buf[256];
+//    const char * prefix = "hello";
+//    snprintf(buf, sizeof(buf),"%s_%d", prefix, idx);
+//    return KVString(buf);
+//};
+
 static auto buildVal = [](int idx)->KVString {
-    char buf[256];
-    const char * prefix = "hello";
-    snprintf(buf, sizeof(buf),"%s_%d", prefix, idx);
-    return KVString(buf);
+    char buf[4096];
+    char ch = (char)(idx % 10 + '0');
+    for (int i = 0; i < 4096; i++) buf[i] = ch;
+    return KVString(buf, 4096);
 };
+
 
 int SimpleCase::write(std::shared_ptr<KVIntf> stor, int prefix, int times) {
     if (stor == nullptr) {

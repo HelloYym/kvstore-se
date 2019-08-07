@@ -7,7 +7,6 @@ set(SRC_BASE ${PROJECT_SOURCE_DIR})
 include_directories(
     ${SRC_BASE}/../../third_party
     ${SRC_BASE}/../third_party
-    ${SRC_BASE}/../../src/include
     ${SRC_BASE}/../include
     )
 
@@ -17,11 +16,8 @@ link_directories(
 
 set(SRC_SERVICE
     ${SRC_BASE}/tcp_client.cc
-    ${SRC_BASE}/meta_mgr.cc
-    ${SRC_BASE}/data_agent.cc
     ${SRC_BASE}/kv_service.cc
-    ${SRC_BASE}/kv_intf.cc
-    )
+    ${SRC_BASE}/kv_intf.cc)
 
 add_library(${PROJECT_NAME} SHARED ${SRC_SERVICE})
 target_link_libraries(${PROJECT_NAME} libnanomsg.a pthread anl)

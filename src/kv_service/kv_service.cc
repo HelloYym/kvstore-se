@@ -2,52 +2,19 @@
 #include "utils.h"
 
 bool KVService::Init(const char * host, int id) {
-    no_ = id;
-    std::lock_guard<std::mutex> lock(mutex_);
-    if (ref_ ++ == 0) {
-        printf("connect time: %d\n", id);
-        char url[256];
-        strcpy(url, host);
-        strcat(url, ":9527");
-        data_->Init(url);
-        meta_->Init(data_);
-    }
-    printf("ref_ number: %d ; and threadId: %d\n", ref_, id);
+    kvClient.init(host, id);
+    kvClient.recoverIndex();
     return true;
 }
 
 void KVService::Close() {
-    std::lock_guard<std::mutex> lock(mutex_);
-    if ( ref_ > 0 && (-- ref_) == 0) {
-        data_->Release();
-        meta_->Release();
-    }
+    kvClient.close();
 }
 
 int KVService::Set(KVString & key, KVString & val) {
-    std::lock_guard<std::mutex> lock(mutex_);
-
-    if (writeFlag) {
-        writeFlag = false;
-        printf("write Id: %d ; key %s; value %s \n", no_, key.Buf(), val.Buf());
-    }
-
-    uint64_t pos = data_->Append(KV_OP_DATA_APPEND, key, val);
-    int ret = 0;
-    meta_->Set(key, pos);
-
-    return (pos >> 32);
+    return kvClient.set(key, val);
 }
 
 int KVService::Get(KVString & key, KVString & val) {
-    std::lock_guard<std::mutex> lock(mutex_);
-
-    if (readFlag) {
-        readFlag = false;
-        printf("read Id: %d ; key %s; value %s \n", no_, key.Buf(), val.Buf());
-    }
-
-    uint64_t pos = meta_->Get(key);
-    data_->Get(KV_OP_DATA_GET, pos, key, val);
-    return (pos >> 32);
+    return kvClient.get(key, val);
 }

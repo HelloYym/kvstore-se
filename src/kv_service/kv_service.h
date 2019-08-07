@@ -4,8 +4,7 @@
 
 #include "kv_string.h"
 #include "kv_intf.h"
-#include "meta_mgr.h"
-#include "data_agent.h"
+#include "kv_client.h"
 
 class KVService : public KVIntf, public std::enable_shared_from_this<KVService> {
 public:
@@ -30,15 +29,9 @@ private:
 
     int ref_ = 0;
 
-    KVString dir_;
+    KVClient kvClient;
 
     int no_;
 
-    std::unique_ptr<MetaMgr> meta_ = std::unique_ptr<MetaMgr>(new MetaMgr);
-
-    std::shared_ptr<DataAgent> data_ = std::unique_ptr<DataAgent>(new DataAgent);
-
-    bool writeFlag = true;
-    bool readFlag = true;
 };
 

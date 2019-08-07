@@ -10,28 +10,16 @@ public:
     TcpClient();
     ~TcpClient();
 
-    static int Connect(const char * url);
+    void close();
 
-    static void Close(int fd);
-
-    static void CloseAll();
-
-    static char * Send(int fd, char * buf, int len);
-protected:
-
-    static TcpClient & getInst();
+    char *send(char * buf, int len);
 
     int connect(const char * url);
 
-    void close(int fd);
-
-    void closeAll();
-
-protected:
+private:
     std::mutex mutex_;
-    std::vector<int> fds_;
+    int fd;
 
-    //std::shared_ptr<RpcProcess> process_;
 };
 ///////////////////////////////////////////////////////////////////////////////////////////////
 #endif

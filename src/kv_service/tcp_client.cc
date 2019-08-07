@@ -14,26 +14,10 @@ TcpClient::TcpClient() {
 }
 
 TcpClient::~TcpClient() {
-    closeAll();
+    close();
 }
 
-int TcpClient::Connect(const char * url) {
-    auto & inst = getInst();
-    int fd = inst.connect(url);
-
-    return fd;
-}
-
-void TcpClient::Close(int fd) {
-    getInst().close(fd);
-}
-
-void TcpClient::CloseAll() {
-    getInst().closeAll();
-    sleep(1);
-}
-
-char * TcpClient::Send(int fd, char * buf, int len) {
+char * TcpClient::send(char * buf, int len) {
     int rc = nn_send(fd, buf, len, 0);
     if (rc < 0) {
         NN_LOG(ERROR, "nn_send") << "ret: " << rc;
@@ -74,13 +58,9 @@ char * TcpClient::Send(int fd, char * buf, int len) {
     return ret;
 }
 
-TcpClient & TcpClient::getInst() {
-    static TcpClient server;
-    return server;
-}
 
 int TcpClient::connect(const char * url) {
-    int fd = nn_socket(AF_SP, NN_REQ);
+    fd = nn_socket(AF_SP, NN_REQ);
     if (fd < 0) {
         NN_LOG(ERROR, "nn_socket");
         return -1;
@@ -92,40 +72,13 @@ int TcpClient::connect(const char * url) {
         return -1;
     }
 
-    mutex_.lock();
-    fds_.emplace_back(fd);
-    mutex_.unlock();
-
     KV_LOG(INFO) << "connect to store node success. fd: " << fd;
 
     return fd;
 }
 
-void TcpClient::close(int fd) {
-    if (fd < 0)  {
-        KV_LOG(ERROR) << "error fd: " << fd;
-        return;
-    }
-
-    mutex_.lock();
-    auto it = std::find(fds_.begin(), fds_.end(), fd);
-    if (it == fds_.end()) {
-        mutex_.unlock();
-        KV_LOG(ERROR) << "stop unknown fd: " << fd;
-        return ;
-    }
-    fds_.erase(it);
-    mutex_.unlock();
-
+void TcpClient::close() {
     nn_close(fd);
     KV_LOG(INFO) << "stop: " << fd;
-}
-
-void TcpClient::closeAll() {
-    std::lock_guard<std::mutex> lock(mutex_);
-    for (auto & fd : fds_) {
-        nn_close(fd);
-    }
-    fds_.clear();
 }
 
