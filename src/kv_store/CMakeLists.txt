@@ -8,6 +8,7 @@ include_directories(
     ${SRC_BASE}/../../third_party
     ${SRC_BASE}/../third_party
     ${SRC_BASE}/../../src/include
+    ${SRC_BASE}/store
     ${SRC_BASE}/../include
     )
 
@@ -21,6 +22,7 @@ set(SRC_KVSTORE
     ${SRC_BASE}/data_mgr.cc
     ${SRC_BASE}/tcp_server.cc
     ${SRC_BASE}/rpc_process.cc
+    ${SRC_BASE}/store/kv_engines.cc
     )
 
 add_executable(${PROJECT_NAME} ${SRC_KVSTORE})
