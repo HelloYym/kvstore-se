@@ -88,7 +88,6 @@ int main(int argc, char * argv[]) {
         int port = 9500 + threadId;
         strcat(url, ":");
         strcat(url, std::to_string(port).c_str());
-
         int ret = TcpServer::Run((const char *)url, threadId, rpc_process->GetPtr());
 
     }

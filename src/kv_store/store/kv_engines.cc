@@ -5,6 +5,7 @@ KVEngines::KVEngines() {
 
 bool KVEngines::Init(const char * dir) {
     this->engine = new KVEngine[THREAD_NUM];
+    printf("THREAD NUM : %d\n", THREAD_NUM);
     for (int id = 0; id < THREAD_NUM ; ++id) {
         engine[id].init(dir, id);
     }

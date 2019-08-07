@@ -57,6 +57,9 @@ public:
     }
 
     int set(KVString &key, KVString & val) {
+        if (setTimes ++ < 10) {
+            printf("ID : %d,  Set : %ld\n", id, *((u_int64_t *) key.Buf()));
+        }
         sendKV(key, val);
         HashLog::getInstance().put(*((u_int64_t *) key.Buf()), id);
         return 1;
@@ -64,11 +67,16 @@ public:
 
     int get(KVString &key, KVString & val) {
         auto pos = HashLog::getInstance().find(*((u_int64_t *) key.Buf()));
+        if (getTimes ++ < 10) {
+            printf("ID : %d,  Get : %ld,  GetID : %d\n",
+                    id, *((u_int64_t *) key.Buf()), pos >> 28);
+        }
         return getValue(pos, val);
     }
 
 private:
     int id;
+    int setTimes = 0, getTimes = 0;
 
     const int sendLen = PACKET_HEADER_SIZE + KEY_SIZE + VALUE_SIZE;
 

@@ -35,7 +35,7 @@ public:
     }
 
     bool init(const char * dir, int id) {
-//        printf("Engine init %s, %d\n", dir, id);
+        printf("Engine init %s, %d\n", dir, id);
         string path = dir;
         std::ostringstream ss;
         ss << path << "/value-" << id;
