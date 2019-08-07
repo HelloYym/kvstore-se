@@ -19,12 +19,14 @@ TcpServer::~TcpServer() {
     stopAll();
 }
 
-int TcpServer::Run(const char * url, std::shared_ptr<RpcProcess> rpc_process) {
+int TcpServer::Run(const char * url, int threadId, std::shared_ptr<RpcProcess> rpc_process) {
     auto & inst = getInst();
+    // 启动一个新端口
     int fd = inst.start(url);
 
     if (fd != -1) {
-        std::thread recv(&TcpServer::processRecv, fd, rpc_process);
+        // 启动一个线程监听新端口
+        std::thread recv(&TcpServer::processRecv, fd, threadId, rpc_process);
         recv.detach();
     }
 
@@ -46,6 +48,7 @@ TcpServer & TcpServer::getInst() {
 }
 
 int TcpServer::start(const char * url) {
+    // 每次调用start启动一个端口
     int fd = nn_socket(AF_SP, NN_REP);
     if (fd < 0) {
         NN_LOG(ERROR, "nn_socket");
@@ -95,7 +98,7 @@ void TcpServer::stopAll() {
     fds_.clear();
 }
 
-void TcpServer::processRecv(int fd, std::shared_ptr<RpcProcess> process) {
+void TcpServer::processRecv(int fd, int threadId, std::shared_ptr<RpcProcess> process) {
     if (fd == -1 || process == nullptr) {
         return ;
     }
@@ -127,7 +130,7 @@ void TcpServer::processRecv(int fd, std::shared_ptr<RpcProcess> process) {
         char * buf = new char [rc];
         memcpy(buf, recv_buf, rc);
         nn_freemsg(recv_buf);
-        process->Insert(buf, rc, cb);
+        process->Insert(threadId, buf, rc, cb);
     }
 }
 

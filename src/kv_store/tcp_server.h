@@ -11,7 +11,7 @@ public:
     TcpServer();
     ~TcpServer();
 
-    static int Run(const char * url, std::shared_ptr<RpcProcess> process);
+    static int Run(const char * url, int threadId, std::shared_ptr<RpcProcess> process);
 
     static void Stop(int fd);
 
@@ -26,7 +26,7 @@ protected:
 
     void stopAll();
 
-    static void processRecv(int fd, std::shared_ptr<RpcProcess> process);
+    static void processRecv(int fd, int threadId, std::shared_ptr<RpcProcess> process);
 
 protected:
     std::mutex mutex_;

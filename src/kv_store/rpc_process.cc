@@ -4,101 +4,141 @@
 #include <thread>
 #include "utils.h"
 
-bool RpcProcess::Insert(char * buf, int len, DoneCbFunc cb) {
+bool RpcProcess::Insert(int threadId, char * buf, int len, DoneCbFunc cb) {
     if (buf == nullptr || len < PACKET_HEADER_SIZE) {
         KV_LOG(ERROR) << "insert to RpcProcess failed. size: " << len;
         return false;
     }
     auto & rpc = *(Packet *)buf;
+
+    // 校验长度
     if (rpc.len + PACKET_HEADER_SIZE != len) {
         KV_LOG(ERROR) << "expect size: " << rpc.len << " buf size: " << len - PACKET_HEADER_SIZE;
         return false;
     }
 
+    // 校验rpc
     uint32_t sum = rpc.Sum();
     if (sum != rpc.crc) {
         KV_LOG(ERROR) << "crc error, expect: " << rpc.crc << " get: " << sum;
         return false;
-    } else {
-
-        switch(rpc.type) {
-            case KV_OP_META_APPEND:
-                processAppend(meta_, buf, cb);
-                break;
-
-            case KV_OP_META_GET:
-                processGet(meta_, buf, cb);
-                break;
-
-            case KV_OP_DATA_APPEND:
-                processAppend(data_, buf, cb);
-                break;
-
-            case KV_OP_DATA_GET:
-                processGet(data_, buf, cb);
-                break;
-
-            case KV_OP_CLEAR:
-                //TODO: clear local data
-                break;
-
-            default:
-                LOG(ERROR) << "unknown rpc type: " << rpc.type;
-                cb(nullptr, 0);
-                break;
-        }
-
-        return true;
     }
+
+    // 校验通过
+    switch(rpc.type) {
+        case KV_OP_PUT_KV:
+            processPutKV(threadId, buf, cb);
+            break;
+
+        case KV_OP_GET_V:
+            processGetV(threadId, buf, cb);
+            break;
+
+        case KV_OP_RESET_K:
+            processResetKeyPosition(threadId, buf, cb);
+            break;
+
+        case KV_OP_GET_K:
+            processGetK(threadId, buf, cb);
+            break;
+
+        case KV_OP_RECOVER:
+            processRecoverKeyPosition(threadId, buf, cb);
+            break;
+
+        case KV_OP_CLEAR:
+            //TODO: clear local data
+            break;
+
+        default:
+            LOG(ERROR) << "unknown rpc type: " << rpc.type;
+            cb(nullptr, 0);
+            break;
+    }
+
+    return true;
+
 }
 
 bool RpcProcess::Run(const char * dir, bool clear) {
-    const char * data_ext = ".data";
-    const char * meta_ext = ".meta";
 
-    dir_ = dir;
-    data_.Init(dir_.Buf(), data_ext);
-    meta_.Init(dir_.Buf(), meta_ext);
+    kv_engines.Init(dir);
+    /*
+     *     if (clear) {
+     *         kv_engines.clear();
+     *         kv_engines.Init(dir_);
+     *     }
+     *  */
+} 
 
-    if (clear) {
-        data_.Clear();
-        meta_.Clear();
-
-        data_.Init(dir_.Buf(), data_ext);
-        meta_.Init(dir_.Buf(), meta_ext);
-    }
-
-}
-
-void RpcProcess::Stop() {
-    run_ = false;
+void RpcProcess::Stop() { 
+    kv_engines.Close();
+    run_ = false; 
     sleep(1);
 }
 
-void RpcProcess::processAppend(DataMgr & target, char * buf, DoneCbFunc cb) {
+void RpcProcess::processPutKV(int threadId, char * buf, DoneCbFunc cb) {
+    // buf解析为packet
     auto & req = *(Packet *) buf;
-    int key_size = *(int *)req.buf;
-    int val_size = *(int *)(req.buf + sizeof(int));
-    if (key_size + val_size + sizeof(int) * 2 > req.len) {
-        KV_LOG(ERROR) << "kv size error: " << key_size << "+" << val_size << "-" << req.len;
+
+    // 检查长度
+    if (req.len != KEY_SIZE + VALUE_SIZE) {
+        KV_LOG(ERROR) << "kv size error: " << req.len;
         return;
     }
 
+    // 从buf构造kvstring
     KVString key;
     KVString val;
-    char * key_buf = new char [key_size];
-    char * val_buf = new char [val_size];
-    memcpy(key_buf, req.buf + sizeof(int) * 2, key_size);
-    memcpy(val_buf, req.buf + sizeof(int) * 2 + key_size, val_size);
-    key.Reset(key_buf, key_size);
-    val.Reset(val_buf, val_size);
-    auto pos = target.Append(key, val);
+    char * key_buf = new char [KEY_SIZE];
+    char * val_buf = new char [VALUE_SIZE];
+    memcpy(key_buf, req.buf, KEY_SIZE);
+    memcpy(val_buf, req.buf + KEY_SIZE, VALUE_SIZE);
+    key.Reset(key_buf, KEY_SIZE);
+    val.Reset(val_buf, KEY_SIZE);
 
-    int    ret_len = PACKET_HEADER_SIZE + sizeof(pos);
+    // 调用kvengines添加kv
+    auto offset = kv_engines.putKV(key, val, threadId);
+
+    // 在ret_buf这个数组中构建packet
+    int    ret_len = PACKET_HEADER_SIZE + sizeof(offset);
     char * ret_buf = new char [ret_len];
     auto & reply = *(Packet *)ret_buf;
-    memcpy(reply.buf, (char *)&pos, sizeof(pos));
-    reply.len   = sizeof(pos);
+    memcpy(reply.buf, (char *)&offset, sizeof(offset));
+    reply.len   = sizeof(offset);
+    reply.sn    = req.sn;
+    reply.type  = req.type;
+    reply.crc   = reply.Sum();
+    // callback发送pos
+    cb(ret_buf, ret_len);
+
+    delete [] ret_buf;
+}
+
+void RpcProcess::processGetV(int threadId, char * buf, DoneCbFunc cb) {
+    auto & req = *(Packet *)buf;
+
+    // 请求只有一个offset参数
+    if (req.len < sizeof(int32_t) ) {
+        KV_LOG(ERROR) << "value index size error: " << req.len;
+        return;
+    }
+
+    auto offset = *(uint32_t *)req.buf;
+
+    // 目前取value是不带key的
+    KVString val;
+    kv_engines.getV(val, offset, threadId);
+
+    int val_size = val.Size();
+
+    int    ret_len = PACKET_HEADER_SIZE + val_size;
+    char * ret_buf = new char[ret_len];
+    auto & reply = *(Packet *)ret_buf;
+
+    memcpy(reply.buf, val.Buf(), val_size);
+
+    reply.len   = val_size;
     reply.sn    = req.sn;
     reply.type  = req.type;
     reply.crc   = reply.Sum();
@@ -108,28 +148,74 @@ void RpcProcess::processAppend(DataMgr & target, char * buf, DoneCbFunc cb) {
     delete [] ret_buf;
 }
 
-void RpcProcess::processGet(DataMgr & target, char * buf, DoneCbFunc cb) {
+void RpcProcess::processResetKeyPosition(int threadId, char * buf, DoneCbFunc cb) {
     auto & req = *(Packet *)buf;
-    if (req.len < sizeof(int64_t) ) {
-        KV_LOG(ERROR) << "index size error: " << req.len;
+
+    kv_engines.resetKeyPosition(threadId);
+
+    int    ret_len = PACKET_HEADER_SIZE;
+    char * ret_buf = new char[ret_len];
+    auto & reply = *(Packet *)ret_buf;
+
+    reply.len   = 0;
+    reply.sn    = req.sn;
+    reply.type  = req.type;
+    reply.crc   = reply.Sum();
+
+    cb(ret_buf, ret_len);
+
+    delete [] ret_buf;
+}
+
+void RpcProcess::processGetK(int threadId, char * buf, DoneCbFunc cb) {
+    auto & req = *(Packet *)buf;
+
+    // 请求只有一个offset参数
+    if (req.len < sizeof(int32_t) ) {
+        KV_LOG(ERROR) << "key index size error: " << req.len;
         return;
     }
 
-    auto idx = *(uint64_t *)req.buf;
+    auto offset = *(uint32_t *)req.buf;
+
     KVString key;
-    KVString val;
-    target.Get(idx, key, val);
+    kv_engines.getK(key, offset, threadId);
 
     int key_size = key.Size();
-    int val_size = val.Size();
-    int    ret_len = PACKET_HEADER_SIZE + sizeof(int) * 2  + key_size + val_size;
+
+    int    ret_len = PACKET_HEADER_SIZE + key_size;
     char * ret_buf = new char[ret_len];
     auto & reply = *(Packet *)ret_buf;
-    memcpy(reply.buf, (char *)&key_size, sizeof(int));
-    memcpy(reply.buf + sizeof(int), (char *)&val_size, sizeof(int));
-    memcpy(reply.buf + sizeof(int) * 2, key.Buf(), key_size);
-    memcpy(reply.buf + sizeof(int) * 2 + key_size, val.Buf(), val_size);
-    reply.len   = sizeof(int) * 2 + key_size + val_size;
+
+    memcpy(reply.buf, key.Buf(), key_size);
+
+    reply.len   = key_size;
+    reply.sn    = req.sn;
+    reply.type  = req.type;
+    reply.crc   = reply.Sum();
+
+    cb(ret_buf, ret_len);
+
+    delete [] ret_buf;
+}
+
+void RpcProcess::processRecoverKeyPosition(int threadId, char * buf, DoneCbFunc cb) {
+    auto & req = *(Packet *)buf;
+
+    if (req.len < sizeof(int32_t) ) {
+        KV_LOG(ERROR) << "recover key position sum error: " << req.len;
+        return;
+    }
+
+    auto sum = *(uint32_t *)req.buf;
+
+    kv_engines.recoverKeyPosition(sum, threadId);
+
+    int    ret_len = PACKET_HEADER_SIZE;
+    char * ret_buf = new char[ret_len];
+    auto & reply = *(Packet *)ret_buf;
+
+    reply.len   = 0;
     reply.sn    = req.sn;
     reply.type  = req.type;
     reply.crc   = reply.Sum();

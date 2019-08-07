@@ -5,11 +5,12 @@
 
 #define KV_LOG(level) LOG(level) << "[" << __FUNCTION__ << ":" << __LINE__ << "] "
 
-const int KV_OP_META_APPEND = 1;
-const int KV_OP_META_GET    = 2;
-const int KV_OP_DATA_APPEND = 3;
-const int KV_OP_DATA_GET    = 4;
-const int KV_OP_CLEAR       = 5;
+const int KV_OP_PUT_KV  = 1;
+const int KV_OP_GET_V   = 2;
+const int KV_OP_RESET_K = 3;
+const int KV_OP_GET_K   = 4;
+const int KV_OP_RECOVER = 5;
+const int KV_OP_CLEAR   = 6;
 
 #pragma pack(push)
 #pragma pack(1)

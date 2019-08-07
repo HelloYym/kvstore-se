@@ -40,7 +40,7 @@ void initLog(const char * name) {
     el::Loggers::reconfigureAllLoggers(conf);
 }
 
-void pause() {
+void pause_a() {
     system("stty raw -echo");
     std::cout << "press any key to exit ...";
     getchar();
@@ -77,19 +77,26 @@ int main(int argc, char * argv[]) {
     KV_LOG(INFO) << "  >> clear dir  : " << clear;
 
 
-    auto rpc_process= std::make_shared<RpcProcess>(dir);
+    auto rpc_process= std::make_shared<RpcProcess>();
     rpc_process->Run(dir, clear);
 
-    char url[256];
-    strcpy(url, host);
-    strcat(url, ":9527");
+    for (int threadId = 0; threadId < 16; threadId++){
 
-    int ret = TcpServer::Run((const char *)url, rpc_process->GetPtr());
+        char url[256];
+        strcpy(url, host);
 
-    if (ret != -1) {
-        pause();
-        TcpServer::StopAll();
+        int port = 9500 + threadId;
+        strcat(url, ":");
+        strcat(url, std::to_string(port).c_str());
+
+        int ret = TcpServer::Run((const char *)url, threadId, rpc_process->GetPtr());
+
+        if (ret != -1) {
+            pause_a();
+            TcpServer::StopAll();
+        }
+
     }
 
-    return ret;
+    return 1;
 }

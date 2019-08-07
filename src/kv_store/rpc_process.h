@@ -9,6 +9,7 @@
 
 #include "data_mgr.h"
 #include "kv_string.h"
+#include "store/kv_engines.h"
 
 typedef std::function<void (char *, int)> DoneCbFunc;
 
@@ -22,17 +23,18 @@ struct PacketInfo {
 };
 
 
+// thread_id 可以在这里面维护
+// 每个rpcprocess对应一个kvengine
 class RpcProcess : public std::enable_shared_from_this<RpcProcess> {
 public:
-    RpcProcess(const char * dir)
-    : dir_(dir), run_(false) {
+    RpcProcess(): run_(false) {
     }
 
     ~RpcProcess() {
         Stop();
     }
 
-    bool Insert(char * buf, int len, DoneCbFunc cb);
+    bool Insert(int threadId, char * buf, int len, DoneCbFunc cb);
 
     bool Run(const char * dir, bool clear);
 
@@ -40,7 +42,7 @@ public:
         return run_;
     }
 
-    void Stop();
+    void Stop(); 
 
     std::shared_ptr<RpcProcess> GetPtr() {
         return shared_from_this();
@@ -49,19 +51,24 @@ public:
 protected:
     bool process();
 
-    void processAppend(DataMgr & target, char * buf, DoneCbFunc cb);
+    void processPutKV(int threadId, char * buf, DoneCbFunc cb);
 
-    void processGet(DataMgr & target, char * buf, DoneCbFunc cb);
+    void processGetV(int threadId, char * buf, DoneCbFunc cb);
+
+    void processResetKeyPosition(int threadId, char * buf, DoneCbFunc cb);
+
+    void processGetK(int threadId, char * buf, DoneCbFunc cb);
+
+    void processRecoverKeyPosition(int threadId, char * buf, DoneCbFunc cb);
+
 
 protected:
-    KVString            dir_;
-    std::atomic_bool    run_;
-    DataMgr             data_;
-    DataMgr             meta_;
 
-    std::mutex              mutex_;
-    std::condition_variable cv_;
-    std::list<PacketInfo>   reqQ_;
+    // 这个参数没有用
+    std::atomic_bool    run_;
+
+    KVEngines   kv_engines;
+
 };
 /////////////////////////////////////////////////////////////////////////////////////////////
 #endif
