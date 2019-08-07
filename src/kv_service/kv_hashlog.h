@@ -37,13 +37,13 @@ public:
     }
 
     void reset() {
-        std::lock_guard<std::mutex> lock(mutex_);
-        if (--thread == 0) {
-//            delete kvHash;
-//            kvHash = nullptr;
+//        std::lock_guard<std::mutex> lock(mutex_);
+//        if (--thread == 0) {
+            delete kvHash;
+            kvHash = nullptr;
             nums = 0;
-            thread = THREAD_NUM;
-        }
+//            thread = THREAD_NUM;
+//        }
 
     }
 
