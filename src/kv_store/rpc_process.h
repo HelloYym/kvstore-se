@@ -8,7 +8,6 @@
 #include <condition_variable>
 #include <functional>
 
-#include "data_mgr.h"
 #include "kv_string.h"
 #include "store/kv_engines.h"
 

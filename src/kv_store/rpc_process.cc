@@ -95,7 +95,7 @@ void RpcProcess::processPutKV(int& threadId, char * buf, DoneCbFunc cb) {
     memcpy(key_buf, req.buf, KEY_SIZE);
     memcpy(val_buf, req.buf + KEY_SIZE, VALUE_SIZE);
     key.Reset(key_buf, KEY_SIZE);
-    val.Reset(val_buf, KEY_SIZE);
+    val.Reset(val_buf, VALUE_SIZE);
 
     // 调用kvengines添加kv
     auto offset = kv_engines.putKV(key, val, threadId);
@@ -176,6 +176,8 @@ void RpcProcess::processGetK(int& threadId, char * buf, DoneCbFunc cb) {
 
     int key_size = key.Size();
 
+    if (!has_key) key_size = 0;
+
     int    ret_len = PACKET_HEADER_SIZE + key_size;
     char * ret_buf = new char[ret_len];
     auto & reply = *(Packet *)ret_buf;
@@ -183,7 +185,7 @@ void RpcProcess::processGetK(int& threadId, char * buf, DoneCbFunc cb) {
     memcpy(reply.buf, key.Buf(), key_size);
 
     reply.len   = key_size;
-    if (!has_key) reply.len = 0;
+//    if (!has_key) reply.len = 0;
     reply.sn    = req.sn;
     reply.type  = req.type;
     reply.crc   = reply.Sum();
