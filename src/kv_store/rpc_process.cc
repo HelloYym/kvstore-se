@@ -95,7 +95,7 @@ void RpcProcess::processPutKV(int& threadId, char * buf, DoneCbFunc cb) {
     memcpy(key_buf, req.buf, KEY_SIZE);
     memcpy(val_buf, req.buf + KEY_SIZE, VALUE_SIZE);
     key.Reset(key_buf, KEY_SIZE);
-    val.Reset(val_buf, KEY_SIZE);
+    val.Reset(val_buf, VALUE_SIZE);
 
     // 调用kvengines添加kv
     auto offset = kv_engines.putKV(key, val, threadId);
