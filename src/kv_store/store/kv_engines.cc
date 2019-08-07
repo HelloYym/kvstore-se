@@ -4,15 +4,15 @@ KVEngines::KVEngines() {
 }
 
 bool KVEngines::Init(const char * dir) {
-    this->engine = new KVEngine[16];
-    for (int id = 0; id < 16 ; ++id) {
+    this->engine = new KVEngine[THREAD_NUM];
+    for (int id = 0; id < THREAD_NUM ; ++id) {
         engine[id].init(dir, id);
     }
     return true;
 }
 
 void KVEngines::Close() {
-    for (int id = 0; id < 16 ; ++id) {
+    for (int id = 0; id < THREAD_NUM ; ++id) {
         engine[id].close();
     }
 }

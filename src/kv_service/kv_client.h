@@ -28,6 +28,7 @@ using namespace std;
 class KVClient {
 public:
     void close() {
+        printf("Client close %d\n", id);
         HashLog::getInstance().reset();
     }
 

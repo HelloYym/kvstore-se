@@ -80,7 +80,7 @@ int main(int argc, char * argv[]) {
     auto rpc_process= std::make_shared<RpcProcess>();
     rpc_process->Run(dir, clear);
 
-    for (int threadId = 0; threadId < 16; threadId++){
+    for (int threadId = 0; threadId < THREAD_NUM; threadId++){
 
         char url[256];
         strcpy(url, host);

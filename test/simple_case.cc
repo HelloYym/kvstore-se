@@ -63,6 +63,7 @@ int SimpleCase::runJobWrite(int no, int prefix, const char * url, int times) {
     int write_err = write(stor, prefix, times);
     stor->Close();
 
+    printf("Finish write\n");
     stor->Init(url, no);
     int read_err = read(stor, prefix, times);
     stor->Close();

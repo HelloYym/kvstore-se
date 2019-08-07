@@ -63,6 +63,7 @@ public:
         this->blockBuffer = static_cast<char *>(mmap(nullptr, blockFileSize, PROT_READ | PROT_WRITE,
                                                      MAP_SHARED | MAP_POPULATE | MAP_NONBLOCK, this->mapBlockFd,
                                                      0));
+        printf("Finish create file\n");
     }
 
     ~KVFile() {

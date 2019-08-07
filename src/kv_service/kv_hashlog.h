@@ -37,6 +37,7 @@ public:
 
     void reset() {
         delete kvHash;
+        kvHash = nullptr;
         nums = 0;
     }
 
