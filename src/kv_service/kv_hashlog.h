@@ -35,13 +35,24 @@ public:
         return nums;
     }
 
+    void reset() {
+        delete kvHash;
+        nums = 0;
+    }
+
     void put(u_int64_t &bigEndkey, int id) {
         std::lock_guard<std::mutex> lock(mutex_);
+        if (kvHash == nullptr) {
+            kvHash = new KVHash(HASH_CAPACITY);
+        }
         kvHash->put(bigEndkey, (id << 28) + nums);
         nums++;
     }
 
     int find(u_int64_t &bigEndkey) {
+        if (kvHash == nullptr) {
+            kvHash = new KVHash(HASH_CAPACITY);
+        }
         return kvHash->getOrDefault(bigEndkey, -1);
     }
 

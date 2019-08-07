@@ -28,6 +28,7 @@ using namespace std;
 class KVClient {
 public:
     void close() {
+        HashLog::getInstance().reset();
     }
 
     bool init(const char * host, int id) {
