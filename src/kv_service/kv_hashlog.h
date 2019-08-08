@@ -35,6 +35,7 @@ public:
     void client_on(){
        std::lock_guard<std::mutex> lock(mutex_);
        client_ref += 1;
+       printf("client_ref num : %d", client_ref);
     }
 
     void close() {
