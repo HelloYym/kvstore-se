@@ -38,6 +38,7 @@ class KVClient {
         void close() {
             printf("Client close %d\n", id);
             nn_close(fd);
+            nums = 0;
             HashLog::getInstance().reset();
         }
 
@@ -67,13 +68,12 @@ class KVClient {
 
         void recoverIndex() {
             printf("recover index\n");
-            int sum = 0;
             reset();
-            while (getKey(sum)) {
-                sum ++;
+            while (getKey(nums)) {
+                nums ++;
             }
-            printf("======key num: %d\n", sum);
-            recover(sum);
+            printf("======key num: %d\n", nums);
+            recover(nums);
         }
 
         int set(KVString &key, KVString & val) {
