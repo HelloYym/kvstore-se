@@ -23,10 +23,16 @@
 #include "utils.h"
 
 using namespace std;
-
+using namespace std::chrono;
 
 class KVClient {
 public:
+
+    milliseconds now() {
+        return duration_cast<milliseconds>(system_clock::now().time_since_epoch());
+    }
+    milliseconds start;
+
     void close() {
         printf("Client close %d\n", id);
         HashLog::getInstance().reset();
@@ -57,9 +63,16 @@ public:
     }
 
     int set(KVString &key, KVString & val) {
-        if (setTimes ++ < 10) {
-            printf("ID : %d,  Set : %ld\n", id, *((u_int64_t *) key.Buf()));
+        if (setTimes == 0) {
+            this->start = now();
         }
+        if (setTimes % 1000 == 0) {
+            printf("ID : %d,  Set : %ld\n", id, *((u_int64_t *) key.Buf()));
+            printf("write 1000. time spent is %lims\n", (now() - start).count());
+            this->start = now();
+        }
+        setTimes ++;
+
         sendKV(key, val);
         HashLog::getInstance().put(*((u_int64_t *) key.Buf()), id);
         return 1;
