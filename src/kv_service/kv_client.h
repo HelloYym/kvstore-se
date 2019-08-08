@@ -69,7 +69,7 @@ class KVClient {
             printf("recover index\n");
             int sum = 0;
             reset();
-            while (getKey()) {
+            while (getKey(sum)) {
                 sum ++;
             }
             printf("======key num: %d\n", sum);
@@ -121,7 +121,7 @@ class KVClient {
             nn_freemsg(ret_buf);
         }
 
-        int getKey() {
+        int getKey(int sum) {
             auto & send_pkt = *(Packet *) sendBuf;
             send_pkt.type   = KV_OP_GET_K;
 
@@ -135,7 +135,7 @@ class KVClient {
                 nn_freemsg(ret_buf);
                 return 0;
             } else {
-                HashLog::getInstance().put(*((u_int64_t *) ret_buf), id);
+                HashLog::getInstance().put(*((u_int64_t *) ret_buf), (id << 28) + sum);
                 nn_freemsg(ret_buf);
                 return 1;
             }
