@@ -69,7 +69,7 @@ int main(int argc, char *argv[])
     const char * path = argv[3];
     const char * host = argv[4];
 
-    if (kv_num < 0 || kv_num > 1000 || thread_num < 1 || thread_num > 16 ||
+    if (kv_num < 0 || kv_num > 100000 || thread_num < 1 || thread_num > 16 ||
             path == nullptr || strlen(path) < 4 || host == nullptr || strlen(host) < 1)
     {
         help(name);

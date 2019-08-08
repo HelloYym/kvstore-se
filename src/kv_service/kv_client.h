@@ -39,7 +39,7 @@ class KVClient {
             printf("Client close %d\n", id);
             nn_close(fd);
             nums = 0;
-            HashLog::getInstance().reset();
+            HashLog::getInstance().close();
         }
 
         bool init(const char * host, int id) {
@@ -62,6 +62,8 @@ class KVClient {
             }
 
             KV_LOG(INFO) << "connect to store node success. fd: " << fd;
+
+            HashLog::getInstance().client_on();
 
             return true;
         }
@@ -88,7 +90,7 @@ class KVClient {
 
         int get(KVString &key, KVString & val) {
             auto pos = HashLog::getInstance().find(*((u_int64_t *) key.Buf()));
-            if (getTimes ++ < 10) {
+            if (getTimes ++ < 5) {
                 printf("ID : %d,  Get : %ld,  threadId : %d, pos : %d\n",
                         id, *((u_int64_t *) key.Buf()), pos>>28, pos & 0x0FFFFFFF);
             }
@@ -121,15 +123,13 @@ class KVClient {
             nn_freemsg(ret_buf);
         }
 
-        int getKey(int sum) {
+        int getKey(int& sum) {
             auto & send_pkt = *(Packet *) sendBuf;
             send_pkt.type   = KV_OP_GET_K;
-
             int rc = nn_send(fd, sendBuf, PACKET_HEADER_SIZE, 0);
 
             char * ret_buf;
             rc = nn_recv(fd, &ret_buf, NN_MSG, 0);
-
 
             if (rc == 0) {
                 nn_freemsg(ret_buf);

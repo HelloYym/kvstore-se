@@ -19,10 +19,10 @@ class HashLog {
 
 private:
     KVHash * kvHash = nullptr;
-//    u_int32_t nums;
-    int thread = THREAD_NUM;
+    int client_ref;
     std::mutex mutex_;
-    HashLog() {
+
+    HashLog(): client_ref(0) {
         this->kvHash = new KVHash(HASH_CAPACITY);
     }
 
@@ -32,19 +32,17 @@ private:
 
 public:
 
-//    int size() {
-//        return nums;
-//    }
+    void client_on(){
+       std::lock_guard<std::mutex> lock(mutex_);
+       client_ref += 1;
+    }
 
-    void reset() {
-//        std::lock_guard<std::mutex> lock(mutex_);
-//        if (--thread == 0) {
+    void close() {
+       std::lock_guard<std::mutex> lock(mutex_);
+       if (--client_ref == 0) {
             delete kvHash;
             kvHash = nullptr;
-//            nums = 0;
-//            thread = THREAD_NUM;
-//        }
-
+       }
     }
 
     void put(u_int64_t &bigEndkey, int id) {
