@@ -32,9 +32,6 @@ int TcpServer::Run(const char * url, int threadId, std::shared_ptr<RpcProcess> r
     return fd;
 }
 
-void TcpServer::Stop(int fd) {
-    getInst().stop(fd);
-}
 
 void TcpServer::StopAll() {
     getInst().stopAll();
@@ -69,30 +66,11 @@ int TcpServer::start(const char * url) {
     return fd;
 }
 
-void TcpServer::stop(int fd) {
-    if (fd < 0)  {
-        KV_LOG(ERROR) << "error with fd: " << fd;
-        return;
-    }
-
-    mutex_.lock();
-    auto it = std::find(fds_.begin(), fds_.end(), fd);
-    if (it != fds_.end()) {
-        mutex_.unlock();
-        KV_LOG(ERROR) << "stop with fd: " << fd;
-        return ;
-    }
-    fds_.erase(it);
-    mutex_.unlock();
-
-    nn_close(fd);
-    KV_LOG(INFO) << "stop: " << fd;
-}
 
 void TcpServer::stopAll() {
     std::lock_guard<std::mutex> lock(mutex_);
     for (auto & fd : fds_) {
-        fds_.clear();
+        nn_close(fd);
     }
     fds_.clear();
 }

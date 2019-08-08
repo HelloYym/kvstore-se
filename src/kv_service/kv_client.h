@@ -62,6 +62,7 @@ class KVClient {
             KV_LOG(INFO) << "connect to store node success. fd: " << fd;
 
             HashLog::getInstance().client_on();
+            printf("Hash init over %s, %d\n", host, id);
 
             this->start = now();
             recoverIndex();

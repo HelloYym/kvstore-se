@@ -14,16 +14,12 @@ public:
 
     static int Run(const char * url, int threadId, std::shared_ptr<RpcProcess> process);
 
-    static void Stop(int fd);
-
     static void StopAll();
 protected:
 
     static TcpServer & getInst();
 
     int start(const char * url);
-
-    void stop(int fd);
 
     void stopAll();
 
