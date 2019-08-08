@@ -81,7 +81,8 @@ class KVClient {
             // printf("ID : %d,  Set : %ld\n", id, *((u_int64_t *) key.Buf()));
             /*         } */
             sendKV(key, val);
-            HashLog::getInstance().put(*((u_int64_t *) key.Buf()), id);
+            HashLog::getInstance().put(*((u_int64_t *) key.Buf()), (id << 28) + nums);
+            nums++;
             return 1;
         }
 
@@ -103,6 +104,8 @@ class KVClient {
         char * sendBuf = new char[sendLen];
 
         int fd;
+
+        int nums = 0;
 
         int sendKV(KVString & key, KVString & val) {
             auto send_len = KEY_SIZE + VALUE_SIZE;
