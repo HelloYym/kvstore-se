@@ -45,12 +45,12 @@ public:
        }
     }
 
-    void put(u_int64_t &bigEndkey, int id) {
+    void put(u_int64_t &bigEndkey, uint32_t compress_id_pos) {
         std::lock_guard<std::mutex> lock(mutex_);
         if (kvHash == nullptr) {
             kvHash = new KVHash(HASH_CAPACITY);
         }
-        kvHash->put(bigEndkey, id);
+        kvHash->put(bigEndkey, compress_id_pos);
     }
 
     int find(u_int64_t &bigEndkey) {

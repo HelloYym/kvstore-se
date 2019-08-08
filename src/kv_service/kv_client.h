@@ -81,7 +81,7 @@ class KVClient {
             if (setTimes == 0) {
                 this->start = now();
             }
-            if (setTimes % 1000 == 0) {
+            if (setTimes % 10000 == 0) {
                 printf("ID : %d,  Set : %ld\n", id, *((u_int64_t *) key.Buf()));
                 printf("write %d. time spent is %lims\n", setTimes, (now() - start).count());
             }
@@ -110,7 +110,7 @@ class KVClient {
         }
 
     private:
-        int id;
+        uint32_t id;
         int setTimes = 0, getTimes = 0;
 
         const int sendLen = PACKET_HEADER_SIZE + KEY_SIZE + VALUE_SIZE;
@@ -119,7 +119,7 @@ class KVClient {
 
         int fd;
 
-        int nums = 0;
+        uint32_t nums = 0;
 
         milliseconds now() {
             return duration_cast<milliseconds>(system_clock::now().time_since_epoch());
@@ -140,7 +140,7 @@ class KVClient {
             nn_freemsg(ret_buf);
         }
 
-        int getKey(int& sum) {
+        int getKey(uint32_t& sum) {
             auto & send_pkt = *(Packet *) sendBuf;
             send_pkt.type   = KV_OP_GET_K;
             int rc = nn_send(fd, sendBuf, PACKET_HEADER_SIZE, 0);
