@@ -88,8 +88,8 @@ class KVClient {
         int get(KVString &key, KVString & val) {
             auto pos = HashLog::getInstance().find(*((u_int64_t *) key.Buf()));
             if (getTimes ++ < 10) {
-                printf("ID : %d,  Get : %ld,  GetID : %d\n",
-                        id, *((u_int64_t *) key.Buf()), pos);
+                printf("ID : %d,  Get : %ld,  threadId : %d, pos : %d\n",
+                        id, *((u_int64_t *) key.Buf()), pos>>28, pos & 0x0FFFFFFF);
             }
             return getValue(pos, val);
         }
@@ -128,7 +128,7 @@ class KVClient {
             rc = nn_recv(fd, &ret_buf, NN_MSG, 0);
 
 
-            if (rc == 1) {
+            if (rc == 0) {
                 nn_freemsg(ret_buf);
                 return 0;
             } else {
@@ -161,7 +161,7 @@ class KVClient {
             return 1;
         }
 
-        int reset() {
+        void reset() {
             auto & send_pkt = *(Packet *) sendBuf;
             send_pkt.type   = KV_OP_RESET_K;
 
@@ -170,11 +170,9 @@ class KVClient {
             char * ret_buf;
             rc = nn_recv(fd, &ret_buf, NN_MSG, 0);
             nn_freemsg(ret_buf);
-
-            return 1;
         }
 
-        int recover(int sum) {
+        void recover(int sum) {
             auto send_len = sizeof(uint32_t);
 
             auto & send_pkt = *(Packet *) sendBuf;
@@ -187,8 +185,6 @@ class KVClient {
             char * ret_buf;
             rc = nn_recv(fd, &ret_buf, NN_MSG, 0);
             nn_freemsg(ret_buf);
-
-            return 1;
         }
 
 };

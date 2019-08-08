@@ -84,15 +84,15 @@ void RpcProcess::processPutKV(int& threadId, char * buf, DoneCbFunc cb) {
     // 调用kvengines添加kv
     auto offset = kv_engines.putKV(key, val, threadId);
 
-    cb(KV_OP_SUCCESS, 1);
+    cb(KV_OP_SUCCESS, 0);
 }
 
 void RpcProcess::processGetV(char * buf, DoneCbFunc cb) {
     auto & req = *(Packet *)buf;
 
     uint32_t compress = *(uint32_t *)req.buf;
-    int threadId = (compress & 0xF0000000) >> 28;
-    int offset = (compress & 0x0FFFFFFF);
+    int threadId = compress >> 28;
+    int offset = compress & 0x0FFFFFFF;
 
     KVString val;
     kv_engines.getV(val, offset, threadId);
@@ -105,7 +105,7 @@ void RpcProcess::processResetKeyPosition(int& threadId, char * buf, DoneCbFunc c
 
     kv_engines.resetKeyPosition(threadId);
 
-    cb(KV_OP_SUCCESS, 1);
+    cb(KV_OP_SUCCESS, 0);
 }
 
 void RpcProcess::processGetK(int& threadId, char * buf, DoneCbFunc cb) {
@@ -114,7 +114,7 @@ void RpcProcess::processGetK(int& threadId, char * buf, DoneCbFunc cb) {
     bool has_key = kv_engines.getK(key, threadId);
 
     if (!has_key) {
-        cb(KV_OP_FAILED, strlen(KV_OP_FAILED));
+        cb(KV_OP_FAILED, 0);
     }
     else {
         cb(key.Buf(), KEY_SIZE);
@@ -128,7 +128,7 @@ void RpcProcess::processRecoverKeyPosition(int& threadId, char * buf, DoneCbFunc
 
     kv_engines.recoverKeyPosition(sum, threadId);
 
-    cb(KV_OP_SUCCESS, 1);
+    cb(KV_OP_SUCCESS, 0);
 }
 
 void RpcProcess::Getfilepath(const char *path, const char *filename,  char *filepath)
