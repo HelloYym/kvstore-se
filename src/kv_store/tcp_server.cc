@@ -111,7 +111,7 @@ void TcpServer::processRecv(int fd, int threadId, std::shared_ptr<RpcProcess> pr
                 KV_LOG(ERROR) << "reply callback param error, buf is nullptr or len =" << len;
                 return;
             }
-            int rc = nn_send(fd, buf, len, 0);
+            int rc = nn_send(fd, buf, len, NN_DONTWAIT);
             if (rc < 0) {
                 NN_LOG(ERROR, "nn_send with fd: " << fd);
             } 

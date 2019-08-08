@@ -133,7 +133,7 @@ class KVClient {
             memcpy(send_pkt.buf + KEY_SIZE, val.Buf(), VALUE_SIZE);
             send_pkt.type = KV_OP_PUT_KV;
 
-            int rc = nn_send(fd, sendBuf, send_len + PACKET_HEADER_SIZE, 0);
+            int rc = nn_send(fd, sendBuf, send_len + PACKET_HEADER_SIZE, NN_DONTWAIT);
 
             char * ret_buf;
             rc = nn_recv(fd, &ret_buf, NN_MSG, 0);
@@ -143,7 +143,7 @@ class KVClient {
         int getKey(uint32_t& sum) {
             auto & send_pkt = *(Packet *) sendBuf;
             send_pkt.type   = KV_OP_GET_K;
-            int rc = nn_send(fd, sendBuf, PACKET_HEADER_SIZE, 0);
+            int rc = nn_send(fd, sendBuf, PACKET_HEADER_SIZE, NN_DONTWAIT);
 
             char * ret_buf;
             rc = nn_recv(fd, &ret_buf, NN_MSG, 0);
@@ -165,7 +165,7 @@ class KVClient {
             memcpy(send_pkt.buf, (char *)&pos, send_len);
             send_pkt.type   = KV_OP_GET_V;
 
-            int rc = nn_send(fd, sendBuf, send_len + PACKET_HEADER_SIZE, 0);
+            int rc = nn_send(fd, sendBuf, send_len + PACKET_HEADER_SIZE, NN_DONTWAIT);
 
             char * ret_buf;
             rc = nn_recv(fd, &ret_buf, NN_MSG, 0);
@@ -185,7 +185,7 @@ class KVClient {
             auto & send_pkt = *(Packet *) sendBuf;
             send_pkt.type   = KV_OP_RESET_K;
 
-            int rc = nn_send(fd, sendBuf, PACKET_HEADER_SIZE, 0);
+            int rc = nn_send(fd, sendBuf, PACKET_HEADER_SIZE, NN_DONTWAIT);
 
             char * ret_buf;
             rc = nn_recv(fd, &ret_buf, NN_MSG, 0);
@@ -200,7 +200,7 @@ class KVClient {
 
             send_pkt.type   = KV_OP_RECOVER;
 
-            int rc = nn_send(fd, sendBuf, send_len + PACKET_HEADER_SIZE, 0);
+            int rc = nn_send(fd, sendBuf, send_len + PACKET_HEADER_SIZE, NN_DONTWAIT);
 
             char * ret_buf;
             rc = nn_recv(fd, &ret_buf, NN_MSG, 0);
