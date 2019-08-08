@@ -68,8 +68,7 @@ public:
         }
         if (setTimes % 1000 == 0) {
             printf("ID : %d,  Set : %ld\n", id, *((u_int64_t *) key.Buf()));
-            printf("write 1000. time spent is %lims\n", (now() - start).count());
-            this->start = now();
+            printf("write %d. time spent is %lims\n", setTimes, (now() - start).count());
         }
         setTimes ++;
 
