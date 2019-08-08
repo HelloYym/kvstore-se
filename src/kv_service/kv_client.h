@@ -30,7 +30,6 @@ using namespace std::chrono;
 class KVClient {
     public:
 
-
         void close() {
             printf("Client close start %d\n", id);
             nn_close(fd);
@@ -41,8 +40,10 @@ class KVClient {
         }
 
         bool init(const char * host, int id) {
-            this->id = id;
+
             printf("Client init start %s, %d\n", host, id);
+
+            this->id = id;
 
             // connect to storage
             char url[256];
@@ -50,7 +51,6 @@ class KVClient {
             int port = 9500 + id;
             strcat(url, ":");
             strcat(url, std::to_string(port).c_str());
-
             fd = nn_socket(AF_SP, NN_REQ);
 
             if (nn_connect(fd, url) < 0) {
@@ -62,6 +62,10 @@ class KVClient {
             KV_LOG(INFO) << "connect to store node success. fd: " << fd;
 
             HashLog::getInstance().client_on();
+
+            this->start = now();
+            recoverIndex();
+            printf("recover threadId %d. time spent is %lims\n", id, (now() - start).count());
 
             printf("Client init over %s, %d\n", host, id);
             return true;
@@ -99,7 +103,7 @@ class KVClient {
             if (getTimes == 0) {
                 this->start = now();
             }
-            if (getTimes % 1000 == 0) {
+            if (getTimes % 10000 == 0) {
                 printf("ID : %d,  Get : %ld,  threadId : %d, pos : %d\n",
                        id, *((u_int64_t *) key.Buf()), (uint32_t)pos>>28, pos & 0x0FFFFFFF);
                 printf("read %d. time spent is %lims\n", getTimes, (now() - start).count());
@@ -110,8 +114,8 @@ class KVClient {
         }
 
     private:
-        uint32_t id;
-        int setTimes = 0, getTimes = 0;
+
+        int id;
 
         const int sendLen = PACKET_HEADER_SIZE + KEY_SIZE + VALUE_SIZE;
 
@@ -125,8 +129,10 @@ class KVClient {
             return duration_cast<milliseconds>(system_clock::now().time_since_epoch());
         }
         milliseconds start;
+        int setTimes = 0, getTimes = 0;
 
-        int sendKV(KVString & key, KVString & val) {
+
+    int sendKV(KVString & key, KVString & val) {
             auto send_len = KEY_SIZE + VALUE_SIZE;
             auto & send_pkt = *(Packet *) sendBuf;
             memcpy(send_pkt.buf, key.Buf(), KEY_SIZE);
@@ -136,17 +142,17 @@ class KVClient {
             int rc = nn_send(fd, sendBuf, send_len + PACKET_HEADER_SIZE, NN_DONTWAIT);
 
             char * ret_buf;
-            rc = nn_recv(fd, &ret_buf, NN_MSG, 0);
+            nn_recv(fd, &ret_buf, NN_MSG, 0);
             nn_freemsg(ret_buf);
         }
 
         int getKey(uint32_t& sum) {
             auto & send_pkt = *(Packet *) sendBuf;
             send_pkt.type   = KV_OP_GET_K;
-            int rc = nn_send(fd, sendBuf, PACKET_HEADER_SIZE, NN_DONTWAIT);
+            nn_send(fd, sendBuf, PACKET_HEADER_SIZE, NN_DONTWAIT);
 
             char * ret_buf;
-            rc = nn_recv(fd, &ret_buf, NN_MSG, 0);
+            int rc = nn_recv(fd, &ret_buf, NN_MSG, 0);
 
             if (rc == 0) {
                 nn_freemsg(ret_buf);
@@ -168,7 +174,7 @@ class KVClient {
             int rc = nn_send(fd, sendBuf, send_len + PACKET_HEADER_SIZE, NN_DONTWAIT);
 
             char * ret_buf;
-            rc = nn_recv(fd, &ret_buf, NN_MSG, 0);
+            nn_recv(fd, &ret_buf, NN_MSG, 0);
 
 
             // TODO: 拷贝了好多次

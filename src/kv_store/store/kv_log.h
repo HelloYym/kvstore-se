@@ -46,7 +46,7 @@ public:
         return filePosition + (cacheBufferPosition * VALUE_SIZE);
     }
 
-    inline int putValueKey(const char *value, const char * key) {
+    inline void putValueKey(const char *value, const char * key) {
         //写入key
         *(keyBuffer + keyBufferPosition) = *((u_int64_t *) key);
         keyBufferPosition++;
@@ -59,8 +59,6 @@ public:
             filePosition += BLOCK_SIZE;
             cacheBufferPosition = 0;
         }
-
-        return keyBufferPosition - 1;
     }
 
     //返回值是要读的值是读缓存块的第几个

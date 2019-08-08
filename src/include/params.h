@@ -19,10 +19,4 @@ const int PAGE_PER_BLOCK = 256;
 //写缓存大小
 const size_t BLOCK_SIZE = PAGE_PER_BLOCK * VALUE_SIZE;
 
-
-struct KVInfo {
-    u_int64_t key;
-    u_int32_t offset;
-};
-
 #endif //PARAMS_H

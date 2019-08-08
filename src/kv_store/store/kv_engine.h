@@ -45,8 +45,8 @@ public:
         return true;
     }
 
-    int putKV(char * key, char * val) {
-        return kvLog->putValueKey(val, key);;
+    void putKV(char * key, char * val) {
+        kvLog->putValueKey(val, key);
     }
 
 

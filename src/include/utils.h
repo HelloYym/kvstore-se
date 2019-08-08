@@ -11,8 +11,6 @@ const uint8_t KV_OP_GET_V   = 2;
 const uint8_t KV_OP_RESET_K = 3;
 const uint8_t KV_OP_GET_K   = 4;
 const uint8_t KV_OP_RECOVER = 5;
-const uint8_t KV_OP_CLEAR   = 6;
-const uint8_t KV_OP_END_K   = 7; 
 
 #define KV_OP_SUCCESS "S"
 #define KV_OP_FAILED "F"

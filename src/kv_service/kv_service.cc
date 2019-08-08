@@ -3,7 +3,6 @@
 
 bool KVService::Init(const char * host, int id) {
     kvClient.init(host, id);
-    kvClient.recoverIndex();
     return true;
 }
 

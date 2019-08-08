@@ -101,20 +101,9 @@ void TcpServer::processRecv(int fd, int threadId, std::shared_ptr<RpcProcess> pr
     if (fd == -1 || process == nullptr) {
         return ;
     }
-
-    std::mutex mtx;
-    std::condition_variable cv;
-
     std::function<void (const char *, int)> cb =
         [&] (const char * buf, int len) {
-            if (buf == nullptr || len < 0) {
-                KV_LOG(ERROR) << "reply callback param error, buf is nullptr or len =" << len;
-                return;
-            }
-            int rc = nn_send(fd, buf, len, NN_DONTWAIT);
-            if (rc < 0) {
-                NN_LOG(ERROR, "nn_send with fd: " << fd);
-            } 
+            nn_send(fd, buf, len, NN_DONTWAIT);
         };
 
     char * recv_buf;
@@ -127,7 +116,7 @@ void TcpServer::processRecv(int fd, int threadId, std::shared_ptr<RpcProcess> pr
             break;
         }
 
-        process->Insert(threadId, recv_buf, rc, cb);
+        process->Insert(threadId, (Packet *) recv_buf, rc, cb);
         nn_freemsg(recv_buf);
     }
 }

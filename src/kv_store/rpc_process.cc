@@ -5,15 +5,9 @@
 #include "utils.h"
 
 #include <dirent.h>
-bool RpcProcess::Insert(int& threadId, char * buf, int len, DoneCbFunc cb) {
-    if (buf == nullptr || len < PACKET_HEADER_SIZE) {
-        KV_LOG(ERROR) << "insert to RpcProcess failed. size: " << len;
-        return false;
-    }
-    auto & rpc = *(Packet *)buf;
-
+bool RpcProcess::Insert(int& threadId, Packet * buf, int len, DoneCbFunc cb) {
     // 校验通过
-    switch(rpc.type) {
+    switch(buf->type) {
         case KV_OP_PUT_KV:
             processPutKV(threadId, buf, cb);
             break;
@@ -34,12 +28,8 @@ bool RpcProcess::Insert(int& threadId, char * buf, int len, DoneCbFunc cb) {
             processRecoverKeyPosition(threadId, buf, cb);
             break;
 
-        case KV_OP_CLEAR:
-            //TODO: clear local data
-            break;
-
         default:
-            LOG(ERROR) << "unknown rpc type: " << rpc.type;
+            LOG(ERROR) << "unknown rpc type: " << buf->type;
             cb(nullptr, 0);
             break;
     }
@@ -49,7 +39,6 @@ bool RpcProcess::Insert(int& threadId, char * buf, int len, DoneCbFunc cb) {
 }
 
 bool RpcProcess::Run(const char * dir, bool clear) {
-
     if (clear) {
         DeleteFile(dir);
     }
@@ -62,35 +51,14 @@ void RpcProcess::Stop() {
     sleep(1);
 }
 
-void RpcProcess::processPutKV(int& threadId, char * buf, DoneCbFunc cb) {
-    // buf解析为packet
-    // TODO: 不传入req
-    auto & req = *(Packet *) buf;
-
-    // 从buf构造kvstring
-//    KVString key;
-//    KVString val;
-
-    // TODO: 不重新构造
-    // key.Reset(req.buf, KEY_SIZE);
-    // val.Reset(req.buf + KEY_SIZE, VALUE_SIZE);
-//    char * key_buf = new char [KEY_SIZE];
-//    char * val_buf = new char [VALUE_SIZE];
-//    memcpy(key_buf, req.buf, KEY_SIZE);
-//    memcpy(val_buf, req.buf + KEY_SIZE, VALUE_SIZE);
-//    key.Reset(key_buf, KEY_SIZE);
-//    val.Reset(val_buf, VALUE_SIZE);
-
+void RpcProcess::processPutKV(int& threadId, Packet * buf, DoneCbFunc cb) {
     // 调用kvengines添加kv
-    auto offset = kv_engines.putKV(req.buf, req.buf + KEY_SIZE, threadId);
-
+    kv_engines.putKV(buf->buf, buf->buf + KEY_SIZE, threadId);
     cb(KV_OP_SUCCESS, 0);
 }
 
-void RpcProcess::processGetV(char * buf, DoneCbFunc cb) {
-    auto & req = *(Packet *)buf;
-
-    uint32_t compress = *(uint32_t *)req.buf;
+void RpcProcess::processGetV(Packet * buf, DoneCbFunc cb) {
+    uint32_t compress = *(uint32_t *)buf->buf;
     int threadId = compress >> 28;
     int offset = compress & 0x0FFFFFFF;
 
@@ -100,15 +68,14 @@ void RpcProcess::processGetV(char * buf, DoneCbFunc cb) {
     cb(val.Buf(), val.Size());
 }
 
-void RpcProcess::processResetKeyPosition(int& threadId, char * buf, DoneCbFunc cb) {
-    auto & req = *(Packet *)buf;
+void RpcProcess::processResetKeyPosition(int& threadId, Packet * buf, DoneCbFunc cb) {
 
     kv_engines.resetKeyPosition(threadId);
 
     cb(KV_OP_SUCCESS, 0);
 }
 
-void RpcProcess::processGetK(int& threadId, char * buf, DoneCbFunc cb) {
+void RpcProcess::processGetK(int& threadId, Packet * buf, DoneCbFunc cb) {
 
     KVString key;
     bool has_key = kv_engines.getK(key, threadId);
@@ -121,10 +88,9 @@ void RpcProcess::processGetK(int& threadId, char * buf, DoneCbFunc cb) {
     }
 }
 
-void RpcProcess::processRecoverKeyPosition(int& threadId, char * buf, DoneCbFunc cb) {
-    auto & req = *(Packet *)buf;
+void RpcProcess::processRecoverKeyPosition(int& threadId, Packet * buf, DoneCbFunc cb) {
 
-    auto sum = *(uint32_t *)req.buf;
+    auto sum = *(uint32_t *)buf->buf;
 
     kv_engines.recoverKeyPosition(sum, threadId);
 
@@ -137,7 +103,7 @@ void RpcProcess::Getfilepath(const char *path, const char *filename,  char *file
     if(filepath[strlen(path) - 1] != '/')
         strcat(filepath, "/");
     strcat(filepath, filename);
-    printf("path is = %s\n",filepath);
+//    printf("path is = %s\n",filepath);
 }
 
 bool RpcProcess::DeleteFile(const char* path)

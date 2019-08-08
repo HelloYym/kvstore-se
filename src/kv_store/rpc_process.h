@@ -10,6 +10,7 @@
 
 #include "kv_string.h"
 #include "store/kv_engines.h"
+#include "utils.h"
 
 typedef std::function<void (const char *, int)> DoneCbFunc;
 
@@ -34,7 +35,7 @@ public:
         Stop();
     }
 
-    bool Insert(int& threadId, char * buf, int len, DoneCbFunc cb);
+    bool Insert(int& threadId, Packet * buf, int len, DoneCbFunc cb);
 
     bool Run(const char * dir, bool clear);
 
@@ -51,15 +52,15 @@ public:
 protected:
     bool process();
 
-    void processPutKV(int& threadId, char * buf, DoneCbFunc cb);
+    void processPutKV(int& threadId, Packet * buf, DoneCbFunc cb);
 
-    void processGetV(char * buf, DoneCbFunc cb);
+    void processGetV(Packet * buf, DoneCbFunc cb);
 
-    void processResetKeyPosition(int& threadId, char * buf, DoneCbFunc cb);
+    void processResetKeyPosition(int& threadId, Packet * buf, DoneCbFunc cb);
 
-    void processGetK(int& threadId, char * buf, DoneCbFunc cb);
+    void processGetK(int& threadId, Packet * buf, DoneCbFunc cb);
 
-    void processRecoverKeyPosition(int& threadId, char * buf, DoneCbFunc cb);
+    void processRecoverKeyPosition(int& threadId, Packet * buf, DoneCbFunc cb);
 
     void Getfilepath(const char *path, const char *filename,  char *filepath);
 
