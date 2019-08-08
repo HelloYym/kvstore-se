@@ -61,6 +61,10 @@ protected:
 
     void processRecoverKeyPosition(int& threadId, char * buf, DoneCbFunc cb);
 
+    void Getfilepath(const char *path, const char *filename,  char *filepath);
+
+    bool DeleteFile(const char* path);
+
 
 protected:
 

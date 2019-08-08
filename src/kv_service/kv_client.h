@@ -23,12 +23,18 @@
 #include "nanomsg/nn.h"
 #include "nanomsg/reqrep.h"
 
-using namespace std;
 
 #define NN_LOG(level, msg) KV_LOG(level) << msg << " failed. error: " << nn_strerror(nn_errno())
+using namespace std::chrono;
 
 class KVClient {
     public:
+
+        milliseconds now() {
+            return duration_cast<milliseconds>(system_clock::now().time_since_epoch());
+        }
+        milliseconds start;
+
         void close() {
             printf("Client close %d\n", id);
             nn_close(fd);
@@ -37,7 +43,6 @@ class KVClient {
 
         bool init(const char * host, int id) {
             this->id = id;
-
             printf("Client init %s, %d\n", host, id);
 
             // connect to storage
