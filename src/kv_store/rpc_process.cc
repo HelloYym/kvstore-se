@@ -68,21 +68,21 @@ void RpcProcess::processPutKV(int& threadId, char * buf, DoneCbFunc cb) {
     auto & req = *(Packet *) buf;
 
     // 从buf构造kvstring
-    KVString key;
-    KVString val;
+//    KVString key;
+//    KVString val;
 
     // TODO: 不重新构造
     // key.Reset(req.buf, KEY_SIZE);
     // val.Reset(req.buf + KEY_SIZE, VALUE_SIZE);
-    char * key_buf = new char [KEY_SIZE];
-    char * val_buf = new char [VALUE_SIZE];
-    memcpy(key_buf, req.buf, KEY_SIZE);
-    memcpy(val_buf, req.buf + KEY_SIZE, VALUE_SIZE);
-    key.Reset(key_buf, KEY_SIZE);
-    val.Reset(val_buf, VALUE_SIZE);
+//    char * key_buf = new char [KEY_SIZE];
+//    char * val_buf = new char [VALUE_SIZE];
+//    memcpy(key_buf, req.buf, KEY_SIZE);
+//    memcpy(val_buf, req.buf + KEY_SIZE, VALUE_SIZE);
+//    key.Reset(key_buf, KEY_SIZE);
+//    val.Reset(val_buf, VALUE_SIZE);
 
     // 调用kvengines添加kv
-    auto offset = kv_engines.putKV(key, val, threadId);
+    auto offset = kv_engines.putKV(req.buf, req.buf + KEY_SIZE, threadId);
 
     cb(KV_OP_SUCCESS, 0);
 }

@@ -30,21 +30,19 @@ using namespace std::chrono;
 class KVClient {
     public:
 
-        milliseconds now() {
-            return duration_cast<milliseconds>(system_clock::now().time_since_epoch());
-        }
-        milliseconds start;
 
         void close() {
-            printf("Client close %d\n", id);
+            printf("Client close start %d\n", id);
             nn_close(fd);
             nums = 0;
+
             HashLog::getInstance().close();
+            printf("Client close over %d\n", id);
         }
 
         bool init(const char * host, int id) {
             this->id = id;
-            printf("Client init %s, %d\n", host, id);
+            printf("Client init start %s, %d\n", host, id);
 
             // connect to storage
             char url[256];
@@ -65,6 +63,7 @@ class KVClient {
 
             HashLog::getInstance().client_on();
 
+            printf("Client init over %s, %d\n", host, id);
             return true;
         }
 
@@ -79,9 +78,15 @@ class KVClient {
         }
 
         int set(KVString &key, KVString & val) {
-            /*         if (setTimes ++ < 10) { */
-            // printf("ID : %d,  Set : %ld\n", id, *((u_int64_t *) key.Buf()));
-            /*         } */
+            if (setTimes == 0) {
+                this->start = now();
+            }
+            if (setTimes % 1000 == 0) {
+                printf("ID : %d,  Set : %ld\n", id, *((u_int64_t *) key.Buf()));
+                printf("write %d. time spent is %lims\n", setTimes, (now() - start).count());
+            }
+            setTimes ++;
+
             sendKV(key, val);
             HashLog::getInstance().put(*((u_int64_t *) key.Buf()), (id << 28) + nums);
             nums++;
@@ -90,10 +95,17 @@ class KVClient {
 
         int get(KVString &key, KVString & val) {
             auto pos = HashLog::getInstance().find(*((u_int64_t *) key.Buf()));
-            if (getTimes ++ < 5) {
-                printf("ID : %d,  Get : %ld,  threadId : %d, pos : %d\n",
-                        id, *((u_int64_t *) key.Buf()), pos>>28, pos & 0x0FFFFFFF);
+
+            if (getTimes == 0) {
+                this->start = now();
             }
+            if (getTimes % 1000 == 0) {
+                printf("ID : %d,  Get : %ld,  threadId : %d, pos : %d\n",
+                       id, *((u_int64_t *) key.Buf()), pos>>28, pos & 0x0FFFFFFF);
+                printf("read %d. time spent is %lims\n", getTimes, (now() - start).count());
+            }
+            getTimes ++;
+
             return getValue(pos, val);
         }
 
@@ -108,6 +120,11 @@ class KVClient {
         int fd;
 
         int nums = 0;
+
+        milliseconds now() {
+            return duration_cast<milliseconds>(system_clock::now().time_since_epoch());
+        }
+        milliseconds start;
 
         int sendKV(KVString & key, KVString & val) {
             auto send_len = KEY_SIZE + VALUE_SIZE;

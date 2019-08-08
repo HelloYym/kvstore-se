@@ -18,7 +18,7 @@ void KVEngines::Close() {
     }
 }
 
-int KVEngines::putKV(KVString & key, KVString & val, int threadId) {
+int KVEngines::putKV(char* key, char * val, int threadId) {
     return engine[threadId].putKV(key, val);
 }
 
