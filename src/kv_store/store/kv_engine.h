@@ -45,8 +45,8 @@ public:
         return true;
     }
 
-    int putKV(KVString &key, KVString & val) {
-        return kvLog->putValueKey(val.Buf(), key.Buf());;
+    int putKV(char * key, char * val) {
+        return kvLog->putValueKey(val, key);;
     }
 
 

@@ -14,7 +14,7 @@ public:
 
     //根据线程id 存储key和value
     //返回offset
-    int putKV(KVString & key, KVString & val, int threadId);
+    int putKV(char * key, char * val, int threadId);
 
     //根据线程id 和 offset 获取 value
     void getV(KVString & val, int offset, int threadId);
