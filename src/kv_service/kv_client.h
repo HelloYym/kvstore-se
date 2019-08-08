@@ -101,7 +101,7 @@ class KVClient {
             }
             if (getTimes % 1000 == 0) {
                 printf("ID : %d,  Get : %ld,  threadId : %d, pos : %d\n",
-                       id, *((u_int64_t *) key.Buf()), pos>>28, pos & 0x0FFFFFFF);
+                       id, *((u_int64_t *) key.Buf()), (uint32_t)pos>>28, pos & 0x0FFFFFFF);
                 printf("read %d. time spent is %lims\n", getTimes, (now() - start).count());
             }
             getTimes ++;
