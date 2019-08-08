@@ -11,7 +11,7 @@
 #include "kv_string.h"
 #include "store/kv_engines.h"
 
-typedef std::function<void (char *, int)> DoneCbFunc;
+typedef std::function<void (const char *, int)> DoneCbFunc;
 
 struct PacketInfo {
     char * buf      = nullptr;

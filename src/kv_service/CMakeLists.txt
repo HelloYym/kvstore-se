@@ -15,7 +15,6 @@ link_directories(
     )
 
 set(SRC_SERVICE
-    ${SRC_BASE}/tcp_client.cc
     ${SRC_BASE}/kv_service.cc
     ${SRC_BASE}/kv_intf.cc)
 

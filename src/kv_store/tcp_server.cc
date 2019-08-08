@@ -7,7 +7,6 @@
 
 #include "nanomsg/nn.h"
 #include "nanomsg/reqrep.h"
-#include "utils.h"
 
 #define NN_LOG(level, msg) KV_LOG(level) << msg << " failed. error: " << nn_strerror(nn_errno())
 
@@ -106,8 +105,8 @@ void TcpServer::processRecv(int fd, int threadId, std::shared_ptr<RpcProcess> pr
     std::mutex mtx;
     std::condition_variable cv;
 
-    std::function<void (char *, int)> cb =
-        [&] (char * buf, int len) {
+    std::function<void (const char *, int)> cb =
+        [&] (const char * buf, int len) {
             if (buf == nullptr || len < 0) {
                 KV_LOG(ERROR) << "reply callback param error, buf is nullptr or len =" << len;
                 return;
@@ -122,15 +121,14 @@ void TcpServer::processRecv(int fd, int threadId, std::shared_ptr<RpcProcess> pr
 
     while(1) {
         int rc = nn_recv(fd, &recv_buf, NN_MSG, 0);
+
         if (rc < 0) {
             NN_LOG(ERROR, "nn_recv with fd: " << fd);
             break;
         }
 
-        char * buf = new char [rc];
-        memcpy(buf, recv_buf, rc);
+        process->Insert(threadId, recv_buf, rc, cb);
         nn_freemsg(recv_buf);
-        process->Insert(threadId, buf, rc, cb);
     }
 }
 

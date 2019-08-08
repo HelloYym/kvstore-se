@@ -2,33 +2,29 @@
 #define __HUAWEI_UTILS_H__
 //////////////////////////////////////////////////////////////////////////////////////////////////
 #include "easylogging++.h"
+#include <cassert>
 
 #define KV_LOG(level) LOG(level) << "[" << __FUNCTION__ << ":" << __LINE__ << "] "
 
-const int KV_OP_PUT_KV  = 1;
-const int KV_OP_GET_V   = 2;
-const int KV_OP_RESET_K = 3;
-const int KV_OP_GET_K   = 4;
-const int KV_OP_RECOVER = 5;
-const int KV_OP_CLEAR   = 6;
+const uint8_t KV_OP_PUT_KV  = 1;
+const uint8_t KV_OP_GET_V   = 2;
+const uint8_t KV_OP_RESET_K = 3;
+const uint8_t KV_OP_GET_K   = 4;
+const uint8_t KV_OP_RECOVER = 5;
+const uint8_t KV_OP_CLEAR   = 6;
+const uint8_t KV_OP_END_K   = 7; 
+
+#define KV_OP_SUCCESS "S"
+#define KV_OP_FAILED "F"
 
 #pragma pack(push)
 #pragma pack(1)
-const int PACKET_HEADER_SIZE = sizeof(int32_t) * 4;
-struct Packet {
-    uint32_t len = 0;
-    uint32_t crc = 0;
-    uint32_t sn  = 0;
-    uint32_t type= 0;
-    char buf[0];
+// const int PACKET_HEADER_SIZE = sizeof(int32_t) * 4;
+const int PACKET_HEADER_SIZE = sizeof(int8_t);
 
-    uint32_t Sum() {
-        uint32_t cnt = 0;
-        for (int i = 0; i < len; i ++) {
-            cnt += (uint8_t)buf[i];
-        }
-        return cnt + len + sn + type;
-    }
+struct Packet {
+    uint8_t type= 0;
+    char buf[0];
 };
 #pragma pack(pop)
 

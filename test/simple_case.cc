@@ -63,7 +63,6 @@ int SimpleCase::runJobWrite(int no, int prefix, const char * url, int times) {
     int write_err = write(stor, prefix, times);
     stor->Close();
 
-    printf("Finish write\n");
     stor->Init(url, no);
     int read_err = read(stor, prefix, times);
     stor->Close();
@@ -178,9 +177,10 @@ int SimpleCase::write(std::shared_ptr<KVIntf> stor, int prefix, int times) {
     for (int i = 0; i < times; i ++) {
         auto key = buildKey(i + base);
         stor->Get(key, val);
+
         if (!(val == buildVal(i)) ) {
             err ++;
-            LOG(ERROR) << "get key " << i << " error, val: " << val.Size() << "-" << val.Buf();
+            LOG(ERROR) << "get key " << i << " error, val: " << val.Size();
             break;
         }
     }
@@ -198,7 +198,7 @@ int SimpleCase::read(std::shared_ptr<KVIntf> stor, int prefix, int times) {
         stor->Get(key, val);
         if (!(val == buildVal(i)) ) {
             err ++;
-            LOG(ERROR) << "get key " << i << " error, val: " << val.Size() << "-" << val.Buf();
+            LOG(ERROR) << "get key " << i << " error, val: " << val.Size();
             break;
         }
     }

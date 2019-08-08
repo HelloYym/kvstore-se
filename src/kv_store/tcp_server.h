@@ -5,6 +5,7 @@
 #include <memory>
 #include <vector>
 #include "rpc_process.h"
+#include "utils.h"
 
 class TcpServer {
 public:

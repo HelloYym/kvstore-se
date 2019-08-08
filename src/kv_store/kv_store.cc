@@ -3,7 +3,6 @@
 
 #include "rpc_process.h"
 #include "tcp_server.h"
-#include "utils.h"
 
 INITIALIZE_EASYLOGGINGPP;
 
