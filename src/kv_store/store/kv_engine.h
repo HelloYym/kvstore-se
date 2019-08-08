@@ -50,10 +50,14 @@ public:
     }
 
 
+    // TODO: 多线程同时读一个文件 readbuf冲突
     void getV(KVString & val, int offset) {
         char * buffer = readBuffer.get();
         int indexInReadBuffer = kvLog->readValue(offset, buffer);
-        val = KVString(buffer + indexInReadBuffer * VALUE_SIZE, VALUE_SIZE);
+        
+        char * buf_ = new char[VALUE_SIZE];
+        memcpy(buf_, buffer + indexInReadBuffer * VALUE_SIZE, VALUE_SIZE);
+        val.Reset(buf_, VALUE_SIZE);
     }
 
 
@@ -61,8 +65,8 @@ public:
         kvLog->resetKeyPosition();
     }
 
-    bool getK(KVString & key) {
-        return kvLog->getKey(key);
+    void getK(char * key_all) {
+        kvLog->getKey(key_all);
     }
 
     void recoverKeyPosition(int sum) {

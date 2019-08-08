@@ -77,15 +77,12 @@ void RpcProcess::processResetKeyPosition(int& threadId, Packet * buf, DoneCbFunc
 
 void RpcProcess::processGetK(int& threadId, Packet * buf, DoneCbFunc cb) {
 
-    KVString key;
-    bool has_key = kv_engines.getK(key, threadId);
+    char * key_all;
+    kv_engines.getK(key_all, threadId);
 
-    if (!has_key) {
-        cb(KV_OP_FAILED, 0);
-    }
-    else {
-        cb(key.Buf(), KEY_SIZE);
-    }
+    cb(key_all, KEY_LOG_SIZE);
+
+    delete[] key_all;
 }
 
 void RpcProcess::processRecoverKeyPosition(int& threadId, Packet * buf, DoneCbFunc cb) {

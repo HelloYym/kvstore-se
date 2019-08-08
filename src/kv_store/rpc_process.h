@@ -11,6 +11,7 @@
 #include "kv_string.h"
 #include "store/kv_engines.h"
 #include "utils.h"
+#include "params.h"
 
 typedef std::function<void (const char *, int)> DoneCbFunc;
 

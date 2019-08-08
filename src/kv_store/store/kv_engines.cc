@@ -26,8 +26,8 @@ void KVEngines::getV(KVString & val, int offset, int threadId) {
     engine[threadId].getV(val, offset);
 }
 
-bool KVEngines::getK(KVString & key, int threadId) {
-    return engine[threadId].getK(key);
+void KVEngines::getK(char * key_all, int threadId) {
+    engine[threadId].getK(key_all);
 }
 
 void KVEngines::resetKeyPosition(int threadId) {
