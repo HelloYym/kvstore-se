@@ -91,8 +91,16 @@ public:
         }
     }
 
-    inline void readValue(size_t offset, char *value, size_t size) {
-        pread(this->fd, value, size, offset);
+    inline void preadValue(int pos, char *value) {
+        //如果要读的value在mmap中
+        if (this->filePosition <= pos * VALUE_SIZE) {
+            auto p = pos % PAGE_PER_BLOCK;
+            memcpy(value, cacheBuffer + (p * VALUE_SIZE), VALUE_SIZE);
+            readCacheStartNo = INT_MIN;
+            return;
+        } else {
+            pread(this->fd, value, VALUE_SIZE, (pos * VALUE_SIZE));
+        }
     }
 
     //再次open时恢复写的位置

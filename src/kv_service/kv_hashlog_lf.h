@@ -55,10 +55,16 @@ public:
         hash_finsh += 1;
     }
 
-    bool hash_has_finish_1() {
+    void hash_has_finish_1() {
         std::lock_guard<std::mutex> lock(mutex1);
         hash_finsh--;
+        if (hash_finsh == 0) {
+            for (int i = 0; i < HASH_NUM; i++) {
+                printf("HASH : %d, %d\n", i, kvHash[i]->size());
+            }
+        }
     }
+
     bool hash_has_finish() {
         std::lock_guard<std::mutex> lock(mutex1);
         return hash_finsh == 0;

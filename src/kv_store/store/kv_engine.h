@@ -40,7 +40,7 @@ public:
         std::ostringstream ss;
         ss << path << "/value-" << id;
         string filePath = ss.str();
-        kvFile = new KVFile(path, id, true, VALUE_LOG_SIZE, KEY_LOG_SIZE, BLOCK_SIZE);
+        kvFile = new KVFile(path, id, false, VALUE_LOG_SIZE, KEY_LOG_SIZE, BLOCK_SIZE);
         kvLog = new KVLog(kvFile->getValueFd(), kvFile->getBlockBuffer(), kvFile->getKeyBuffer());
         return true;
     }
@@ -52,12 +52,13 @@ public:
 
     // TODO: 多线程同时读一个文件 readbuf冲突
     void getV(char * val, int offset) {
-        char * buffer = readBuffer.get();
-        int indexInReadBuffer = kvLog->readValue(offset, buffer);
+//        char * buffer = readBuffer.get();
+//        int indexInReadBuffer = kvLog->readValue(offset, buffer);
         
 //        char * buf_ = new char[VALUE_SIZE];
-        memcpy(val, buffer + indexInReadBuffer * VALUE_SIZE, VALUE_SIZE);
+//        memcpy(val, buffer + indexInReadBuffer * VALUE_SIZE, VALUE_SIZE);
 //        val.Reset(buf_, VALUE_SIZE);
+        kvLog->preadValue(offset, val);
     }
 
 

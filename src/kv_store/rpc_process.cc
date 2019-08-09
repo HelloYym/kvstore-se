@@ -74,7 +74,6 @@ void RpcProcess::processGetV(Packet * buf, DoneCbFunc cb, char * send_buf) {
 
 void RpcProcess::processResetKeyPosition(int& threadId, Packet * buf, DoneCbFunc cb, char * send_buf) {
 
-    printf("key position reset\n");
     kv_engines.resetKeyPosition(threadId);
 
     auto & tmp = * (Packet *) send_buf;
