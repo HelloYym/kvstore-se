@@ -3,7 +3,6 @@
 //////////////////////////////////////////////////////////////////////////////////////////////////
 #include "easylogging++.h"
 #include "params.h"
-#include "sys/socket.h"
 #include <cassert>
 
 #define KV_LOG(level) LOG(level) << "[" << __FUNCTION__ << ":" << __LINE__ << "] "
@@ -17,11 +16,11 @@ const uint8_t KV_OP_RECOVER = 5;
 #define KV_OP_SUCCESS 'S'
 #define KV_OP_FAILED 'F'
 
+const int PACKET_HEADER_SIZE = sizeof(int8_t) + sizeof(u_int32_t);
+const int MAX_PACKET_SIZE = PACKET_HEADER_SIZE + KEY_SIZE + VALUE_SIZE;
 #pragma pack(push)
 #pragma pack(1)
 
-const int PACKET_HEADER_SIZE = sizeof(int8_t) + sizeof(int32_t);
-const int MAX_PACKET_SIZE = PACKET_HEADER_SIZE + KEY_SIZE + VALUE_SIZE;
 struct Packet {
     int len = 0;
     uint8_t type= 0;

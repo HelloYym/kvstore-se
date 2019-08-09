@@ -18,17 +18,13 @@
 #include <atomic>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <netinet/tcp.h>
 
 #include "kv_hashlog_lf.h"
 #include "kv_string.h"
 #include "params.h"
 #include "utils.h"
-#include "nanomsg/nn.h"
-#include "nanomsg/tcp.h"
-#include "nanomsg/reqrep.h"
 
-
-#define NN_LOG(level, msg) KV_LOG(level) << msg << " failed. error: " << nn_strerror(nn_errno())
 using namespace std::chrono;
 
 class KVClient {
@@ -55,7 +51,11 @@ class KVClient {
                 printf("socket error\n");
                 exit(-1);
             }
-
+            int on = 1;
+            if (setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, (void *)&on, sizeof(on)) == 0)
+            {
+                printf("TCP_NODELAY\n");
+            }
 
             server_addr.sin_family = AF_INET;
             server_addr.sin_port = htons(port);
@@ -144,15 +144,15 @@ class KVClient {
 
         struct sockaddr_in server_addr;
 
-
         uint32_t nums = 0;
 
         milliseconds now() {
             return duration_cast<milliseconds>(system_clock::now().time_since_epoch());
         }
-        milliseconds start;
-        int setTimes = 0, getTimes = 0;
 
+        milliseconds start;
+
+        int setTimes = 0, getTimes = 0;
 
         void sendKV(KVString & key, KVString & val) {
             auto send_len = KEY_SIZE + VALUE_SIZE + PACKET_HEADER_SIZE;
@@ -162,70 +162,42 @@ class KVClient {
             memcpy(send_pkt.buf + KEY_SIZE, val.Buf(), VALUE_SIZE);
             send_pkt.type = KV_OP_PUT_KV;
 
-            if(send(fd, sendBuf, send_len, 0) == -1){
-                printf("send error\n");
-            }
+            sendPack(fd, sendBuf);
             recvPack(fd, recvBuf);
         }
 
         int getKey(uint32_t& sum) {
             auto & send_pkt = *(Packet *) sendBuf;
-            send_pkt.type   = KV_OP_GET_K;
-            nn_send(fd, sendBuf, PACKET_HEADER_SIZE, 0);
-
+            send_pkt.len = PACKET_HEADER_SIZE;
+            send_pkt.type = KV_OP_GET_K;
+            sendPack(fd, sendBuf);
             recvPack(fd, recvBuf);
 
-            char * ret_buf;
-            int rc = nn_recv(fd, &ret_buf, NN_MSG, 0);
-            if (rc == 0) {
-                nn_freemsg(ret_buf);
+            auto recv_pkt = *(Packet *) recvBuf;
+            if (recv_pkt.len == PACKET_HEADER_SIZE) {
+                //No more keys
                 return 0;
             } else {
-                HashLogLF::getInstance().put(*((u_int64_t *) ret_buf), (id << 28) + sum);
-                nn_freemsg(ret_buf);
+                HashLogLF::getInstance().put(*((u_int64_t *) recv_pkt.buf), (id << 28) + sum);
                 return 1;
-            }
-        }
-
-        int getAllKeys() {
-            auto & send_pkt = *(Packet *) sendBuf;
-            send_pkt.type   = KV_OP_GET_K;
-            nn_send(fd, sendBuf, PACKET_HEADER_SIZE, 0);
-
-            u_int64_t * ret_buf;
-            int rc = nn_recv(fd, &ret_buf, NN_MSG, 0);
-
-            if (rc == 0) {
-                nn_freemsg(ret_buf);
-                return 0;
-            } else {
-                int count = 0;
-                u_int64_t k = *(ret_buf + count);
-                while (k || (k == 0 && *(ret_buf + count + 1) != 0)) {
-                    HashLogLF::getInstance().put(k, (id << 28) + count);
-                    k = *(ret_buf + ++count);
-                }
-                nn_freemsg(ret_buf);
-                return count;
             }
         }
 
         int getValue(uint32_t pos, KVString &val) {
             auto send_len = sizeof(uint32_t);
             auto & send_pkt = *(Packet *) sendBuf;
+            send_pkt.len = send_len + PACKET_HEADER_SIZE;
+            send_pkt.type = KV_OP_GET_V;
             memcpy(send_pkt.buf, (char *)&pos, send_len);
-            send_pkt.type   = KV_OP_GET_V;
 
-            int rc = nn_send(fd, sendBuf, send_len + PACKET_HEADER_SIZE, 0);
+            sendPack(fd, sendBuf);
+            recvPack(fd, recvBuf);
 
-            char * ret_buf;
-            nn_recv(fd, &ret_buf, NN_MSG, 0);
-
+            auto recv_pkt = *(Packet *) recvBuf;
 
             // TODO: 拷贝了好多次
             char * v = new char [VALUE_SIZE];
-            memcpy(v, ret_buf, VALUE_SIZE);
-            nn_freemsg(ret_buf);
+            memcpy(v, recv_pkt.buf, VALUE_SIZE);
 
             val.Reset(v, VALUE_SIZE);
 
@@ -234,28 +206,51 @@ class KVClient {
 
         void reset() {
             auto & send_pkt = *(Packet *) sendBuf;
+            send_pkt.len    = PACKET_HEADER_SIZE;
             send_pkt.type   = KV_OP_RESET_K;
-
-            int rc = nn_send(fd, sendBuf, PACKET_HEADER_SIZE, 0);
-
-            char * ret_buf;
-            rc = nn_recv(fd, &ret_buf, NN_MSG, 0);
-            nn_freemsg(ret_buf);
+            sendPack(fd, sendBuf);
+            recvPack(fd, recvBuf);
         }
 
         void recover(int sum) {
-            auto send_len = sizeof(uint32_t);
-
             auto & send_pkt = *(Packet *) sendBuf;
+
+            auto send_len = sizeof(uint32_t);
+            send_pkt.len = send_len + PACKET_HEADER_SIZE;
+            send_pkt.type   = KV_OP_RECOVER;
             memcpy(send_pkt.buf, (char *)&sum, send_len);
 
-            send_pkt.type   = KV_OP_RECOVER;
+            sendPack(fd, sendBuf);
+            recvPack(fd, recvBuf);
+        }
 
-            int rc = nn_send(fd, sendBuf, send_len + PACKET_HEADER_SIZE, 0);
+        void sendPack(int fd, char * buf) {
+            auto send_pkt = (Packet *) buf;
+            if (send(fd, buf, send_pkt->len, 0) == -1) {
+                printf("send error\n");
+            }
+        }
 
-            char * ret_buf;
-            rc = nn_recv(fd, &ret_buf, NN_MSG, 0);
-            nn_freemsg(ret_buf);
+        void recvPack(int fd, char * buf) {
+            auto bytes = recv(fd, buf, MAX_PACKET_SIZE, 0);
+            if (bytes == -1) {
+                printf("recv error\n"); return;
+            }
+            while (bytes < sizeof(int)) {
+                auto b = recv(fd, buf + bytes, MAX_PACKET_SIZE, 0);
+                if (b == -1) {
+                    printf("recv error\n"); return;
+                }
+                bytes += b;
+            }
+            int total = *(int *) buf;
+            while (total != bytes) {
+                auto b = recv(fd, buf + bytes, MAX_PACKET_SIZE, 0);
+                if (b == -1) {
+                    printf("recv error\n"); return;
+                }
+                bytes += b;
+            }
         }
 
 };
