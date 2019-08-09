@@ -19,9 +19,11 @@ class HashLogLF {
 private:
     KVHash ** kvHash = nullptr;
     int client_ref;
+    int hash_finsh;
     std::mutex mutex_[HASH_NUM];
+    std::mutex mutex1;
 
-    HashLogLF(): client_ref(0) {
+    HashLogLF(): client_ref(0), hash_finsh(0) {
         init();
     }
 
@@ -45,15 +47,25 @@ public:
 
 
     void client_on() {
-        std::lock_guard<std::mutex> lock(mutex_[0]);
+        std::lock_guard<std::mutex> lock(mutex1);
         if (kvHash == nullptr) {
             init();
         }
         client_ref += 1;
+        hash_finsh += 1;
+    }
+
+    bool hash_has_finish_1() {
+        std::lock_guard<std::mutex> lock(mutex1);
+        hash_finsh--;
+    }
+    bool hash_has_finish() {
+        std::lock_guard<std::mutex> lock(mutex1);
+        return hash_finsh == 0;
     }
 
     void close() {
-        std::lock_guard<std::mutex> lock(mutex_[0]);
+        std::lock_guard<std::mutex> lock(mutex1);
         if (--client_ref == 0) {
             for (int i = 0; i < HASH_NUM; i++) {
                 delete kvHash[i];

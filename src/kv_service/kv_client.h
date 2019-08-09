@@ -86,6 +86,10 @@ class KVClient {
             printf("recover threadId %d. time spent is %lims\n", id, (now() - start).count());
             printf("======key num: %d\n", nums);
             recover(nums);
+            HashLogLF::getInstance().hash_has_finish_1();
+            while (!HashLogLF::getInstance().hash_has_finish()) {
+                sleep(1);
+            }
         }
 
         int set(KVString &key, KVString & val) {
