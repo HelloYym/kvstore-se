@@ -5,10 +5,10 @@
 
 const int THREAD_NUM = 16;
 const int HASH_NUM = 1024;
-const int NUM_PER_SLOT = 4 * 1024 * 1024;
+const int NUM_PER_SLOT = 4 * 1024 * 32;
 
 const int KEY_SIZE = 8;
-const size_t VALUE_SIZE = 4096;
+const int VALUE_SIZE = 4096;
 const size_t VALUE_LOG_SIZE = NUM_PER_SLOT * VALUE_SIZE;
 const size_t KEY_LOG_SIZE = NUM_PER_SLOT * KEY_SIZE;
 //hash的容量

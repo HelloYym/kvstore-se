@@ -6,6 +6,7 @@
 #include <iostream>
 #include <sys/mman.h>
 #include <sys/syscall.h>
+#include <sys/socket.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <fcntl.h>
@@ -15,6 +16,8 @@
 #include <string>
 #include <mutex>
 #include <atomic>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 
 #include "kv_hashlog_lf.h"
 #include "kv_string.h"
@@ -31,33 +34,37 @@ using namespace std::chrono;
 class KVClient {
     public:
 
-        void close() {
+        void clientClose() {
             printf("Client close start %d\n", id);
-            nn_close(fd);
+            close(fd);
             nums = 0;
             recoverFlag = false;
             HashLogLF::getInstance().close();
             printf("Client close over %d\n", id);
         }
 
-        bool init(const char * host, int id) {
+        bool clientInit(const char * host, int id) {
 
             printf("Client init start %s, %d\n", host, id);
 
             this->id = id;
 
             // connect to storage
-            char url[256];
-            strcpy(url, host);
-            int port = 9500 + id;
-            strcat(url, ":");
-            strcat(url, std::to_string(port).c_str());
-            fd = nn_socket(AF_SP, NN_REQ);
+            auto port = 9500 + id;
+            if ((fd = socket(AF_INET,SOCK_STREAM, 0)) == -1) {
+                printf("socket error\n");
+                exit(-1);
+            }
 
-            if (nn_connect(fd, url) < 0) {
-                NN_LOG(ERROR, "nn_connect");
-                nn_close(fd);
-                return false;
+
+            server_addr.sin_family = AF_INET;
+            server_addr.sin_port = htons(port);
+            server_addr.sin_addr.s_addr = inet_addr(host);
+            bzero(&(server_addr.sin_zero),sizeof(server_addr.sin_zero));
+
+            if (connect(fd, (struct sockaddr *)&server_addr,sizeof(struct sockaddr_in)) == -1){
+                printf("connect error\n");
+                exit(-1);
             }
 
             KV_LOG(INFO) << "connect to store node success. fd: " << fd;
@@ -130,11 +137,13 @@ class KVClient {
 
         bool recoverFlag = false;
 
-        const int sendLen = PACKET_HEADER_SIZE + KEY_SIZE + VALUE_SIZE;
-
-        char * sendBuf = new char[sendLen];
+        char * sendBuf = new char[MAX_PACKET_SIZE];
+        char * recvBuf = new char[MAX_PACKET_SIZE];
 
         int fd;
+
+        struct sockaddr_in server_addr;
+
 
         uint32_t nums = 0;
 
@@ -146,17 +155,17 @@ class KVClient {
 
 
         void sendKV(KVString & key, KVString & val) {
-            auto send_len = KEY_SIZE + VALUE_SIZE;
+            auto send_len = KEY_SIZE + VALUE_SIZE + PACKET_HEADER_SIZE;
             auto & send_pkt = *(Packet *) sendBuf;
+            send_pkt.len = send_len;
             memcpy(send_pkt.buf, key.Buf(), KEY_SIZE);
             memcpy(send_pkt.buf + KEY_SIZE, val.Buf(), VALUE_SIZE);
             send_pkt.type = KV_OP_PUT_KV;
 
-            int rc = nn_send(fd, sendBuf, send_len + PACKET_HEADER_SIZE, 0);
-
-            char * ret_buf;
-            nn_recv(fd, &ret_buf, NN_MSG, 0);
-            nn_freemsg(ret_buf);
+            if(send(fd, sendBuf, send_len, 0) == -1){
+                printf("send error\n");
+            }
+            recvPack(fd, recvBuf);
         }
 
         int getKey(uint32_t& sum) {
@@ -164,9 +173,10 @@ class KVClient {
             send_pkt.type   = KV_OP_GET_K;
             nn_send(fd, sendBuf, PACKET_HEADER_SIZE, 0);
 
+            recvPack(fd, recvBuf);
+
             char * ret_buf;
             int rc = nn_recv(fd, &ret_buf, NN_MSG, 0);
-
             if (rc == 0) {
                 nn_freemsg(ret_buf);
                 return 0;

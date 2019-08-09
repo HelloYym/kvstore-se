@@ -2,12 +2,12 @@
 #include "utils.h"
 
 bool KVService::Init(const char * host, int id) {
-    kvClient.init(host, id);
+    kvClient.clientInit(host, id);
     return true;
 }
 
 void KVService::Close() {
-    kvClient.close();
+    kvClient.clientClose();
 }
 
 int KVService::Set(KVString & key, KVString & val) {
