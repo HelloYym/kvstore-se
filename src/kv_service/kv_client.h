@@ -80,7 +80,6 @@ class KVClient {
             printf("start recover index: %d.\n", id);
             reset();
             while (getKey(nums)) {
-                printf("NUM : %d\n", nums);
                 nums ++;
             }
 
@@ -94,15 +93,15 @@ class KVClient {
                 recoverFlag = true;
                 recoverIndex();
             }
-//            if (setTimes == 0) {
-//                this->start = now();
-//            }
-//
-//            if (setTimes % 500000 == 0) {
-//                printf("ID : %d,  Set : %ld\n", id, *((u_int64_t *) key.Buf()));
-//                printf("write %d. time spent is %lims\n", setTimes, (now() - start).count());
-//            }
-//            setTimes ++;
+            if (setTimes == 0) {
+                this->start = now();
+            }
+
+            if (setTimes % 500000 == 0) {
+                printf("ID : %d,  Set : %ld\n", id, *((u_int64_t *) key.Buf()));
+                printf("write %d. time spent is %lims\n", setTimes, (now() - start).count());
+            }
+            setTimes ++;
 
             sendKV(key, val);
             HashLogLF::getInstance().put(*((u_int64_t *) key.Buf()), (id << 28) + nums);
@@ -206,11 +205,8 @@ class KVClient {
             auto & send_pkt = *(Packet *) sendBuf;
             send_pkt.len    = PACKET_HEADER_SIZE;
             send_pkt.type   = KV_OP_RESET_K;
-            printf("%d begin rst\n", id);
             sendPack(fd, sendBuf);
-            printf("%d begin rst2\n", id);
             recvPack(fd, recvBuf);
-            printf("%d end rst\n", id);
         }
 
         void recover(int sum) {
