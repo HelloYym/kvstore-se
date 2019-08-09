@@ -172,7 +172,7 @@ class KVClient {
 
             recvPack(fd, recvBuf);
 
-            auto recv_pkt = *(Packet *) recvBuf;
+            auto & recv_pkt = *(Packet *) recvBuf;
             if (recv_pkt.len == PACKET_HEADER_SIZE) {
                 //No more keys
                 printf("NO KEYS\n");
@@ -220,41 +220,35 @@ class KVClient {
             send_pkt.len = send_len + PACKET_HEADER_SIZE;
             send_pkt.type   = KV_OP_RECOVER;
             memcpy(send_pkt.buf, (char *)&sum, send_len);
-            printf("%d begin rco\n", id);
-
             sendPack(fd, sendBuf);
             recvPack(fd, recvBuf);
-            printf("%d end rco\n", id);
 
         }
 
         void sendPack(int fd, char * buf) {
-            auto send_pkt = (Packet *) buf;
-            if (send(fd, buf, send_pkt->len, 0) == -1) {
+            auto & send_pkt = *(Packet *) buf;
+            if (send(fd, buf, send_pkt.len, 0) == -1) {
                 printf("send error\n");
             }
         }
 
         int recvPack(int fd, char * buf) {
             auto bytes = recv(fd, buf, MAX_PACKET_SIZE, 0);
-            if (bytes == -1) {
-                printf("recv error\n");
-                return -1;
+            if (bytes <= 0) {
+                return bytes;
             }
             while (bytes < sizeof(int)) {
                 auto b = recv(fd, buf + bytes, MAX_PACKET_SIZE, 0);
-                if (b == -1) {
-                    printf("recv error\n");
-                    return -1;
+                if (b <= 0) {
+                    return b;
                 }
                 bytes += b;
             }
             int total = *(int *) buf;
             while (total != bytes) {
                 auto b = recv(fd, buf + bytes, MAX_PACKET_SIZE, 0);
-                if (b == -1) {
-                    printf("recv error\n");
-                    return -1;
+                if (b <= 0) {
+                    return b;
                 }
                 bytes += b;
             }

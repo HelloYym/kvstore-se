@@ -125,10 +125,6 @@ void TcpServer::processRecv(int ssfd, int threadId, std::shared_ptr<RpcProcess> 
 
     std::function<void (const char *, int)> cb =
         [&] (const char * buf, int len) {
-//            auto send_pkt = (Packet *) buf;
-
-//            printf("fd : %d, SEND : %d,  %d\n", sfd, send_pkt->type, send_pkt->len);
-
             send(sfd, buf, len, 0);
         };
 
@@ -137,7 +133,7 @@ void TcpServer::processRecv(int ssfd, int threadId, std::shared_ptr<RpcProcess> 
 
     while(1) {
         int rc = recvPack(sfd, recv_buf);
-//        printf("FD : %d, RECV: %d, %d\n",sfd, ((Packet *) recv_buf)->type, ((Packet *) recv_buf)->len);
+        printf("RECV: %d, %d\n", (Packet))
         if (rc < 0) {
             printf("recive error %d\n", sfd);
             break;
