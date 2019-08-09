@@ -4,6 +4,7 @@
 #include <string>
 
 const int THREAD_NUM = 16;
+const int HASH_NUM = 1024;
 const int NUM_PER_SLOT = 4 * 1024 * 1024;
 
 const int KEY_SIZE = 8;
@@ -11,7 +12,7 @@ const size_t VALUE_SIZE = 4096;
 const size_t VALUE_LOG_SIZE = NUM_PER_SLOT * VALUE_SIZE;
 const size_t KEY_LOG_SIZE = NUM_PER_SLOT * KEY_SIZE;
 //hash的容量
-const int HASH_CAPACITY = 2 * NUM_PER_SLOT * THREAD_NUM;
+const int HASH_CAPACITY = 2 * NUM_PER_SLOT * THREAD_NUM / HASH_NUM;
 //读缓存大小（多少块4KB）
 const int READ_CACHE_SIZE = 256 * 10;
 //写缓存大小（多少块4KB）

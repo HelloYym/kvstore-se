@@ -65,8 +65,8 @@ public:
         kvLog->resetKeyPosition();
     }
 
-    void getK(char * key_all) {
-        kvLog->getKey(key_all);
+    bool getK(KVString & key) {
+        return kvLog->getKey(key);
     }
 
     void recoverKeyPosition(int sum) {

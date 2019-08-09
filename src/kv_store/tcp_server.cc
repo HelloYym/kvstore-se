@@ -6,6 +6,7 @@
 #include <condition_variable>
 
 #include "nanomsg/nn.h"
+#include "nanomsg/tcp.h"
 #include "nanomsg/reqrep.h"
 
 #define NN_LOG(level, msg) KV_LOG(level) << msg << " failed. error: " << nn_strerror(nn_errno())
@@ -34,8 +35,9 @@ int TcpServer::Run(const char * url, int threadId, std::shared_ptr<RpcProcess> r
 
 
 void TcpServer::StopAll() {
+    printf("STOP ALL...\n");
     getInst().stopAll();
-    sleep(1);
+//    sleep(1);
 }
 
 TcpServer & TcpServer::getInst() {
@@ -81,7 +83,7 @@ void TcpServer::processRecv(int fd, int threadId, std::shared_ptr<RpcProcess> pr
     }
     std::function<void (const char *, int)> cb =
         [&] (const char * buf, int len) {
-            nn_send(fd, buf, len, NN_DONTWAIT);
+            nn_send(fd, buf, len, 0);
         };
 
     char * recv_buf;

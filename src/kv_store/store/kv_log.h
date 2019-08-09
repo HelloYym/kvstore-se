@@ -107,9 +107,11 @@ public:
         }
     }
 
-    inline void getKey(char * key_all) {
-        key_all = new char[KEY_LOG_SIZE];
-        memcpy(key_all, keyBuffer, KEY_LOG_SIZE);
+    inline bool getKey(KVString & key) {
+        uint64_t k = *(keyBuffer + keyBufferPosition);
+        key = KVString((char *) (keyBuffer + keyBufferPosition), 8);
+        keyBufferPosition++;
+        return k != 0 || (k == 0 && *(keyBuffer + keyBufferPosition) != 0);
     }
 
     inline void resetKeyPosition() {

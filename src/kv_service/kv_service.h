@@ -9,7 +9,6 @@
 class KVService : public KVIntf, public std::enable_shared_from_this<KVService> {
 public:
     KVService() {
-        printf("create KVService\n");
     }
 
     bool Init(const char * host, int id);
