@@ -18,6 +18,7 @@ const uint8_t KV_OP_RECOVER = 5;
 
 const int PACKET_HEADER_SIZE = sizeof(int8_t) + sizeof(u_int32_t);
 const int MAX_PACKET_SIZE = PACKET_HEADER_SIZE + KEY_SIZE + VALUE_SIZE;
+
 #pragma pack(push)
 #pragma pack(1)
 
