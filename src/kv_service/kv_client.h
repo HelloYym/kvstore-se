@@ -80,7 +80,6 @@ class KVClient {
             printf("start recover index: %d.\n", id);
             reset();
             while (getKey(nums)) {
-                printf("NUM : %d\n", nums);
                 nums ++;
             }
 
@@ -172,7 +171,7 @@ class KVClient {
 
             recvPack(fd, recvBuf);
 
-            auto recv_pkt = *(Packet *) recvBuf;
+            auto & recv_pkt = *(Packet *) recvBuf;
             if (recv_pkt.len == PACKET_HEADER_SIZE) {
                 //No more keys
                 printf("NO KEYS\n");

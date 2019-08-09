@@ -42,7 +42,7 @@ int TcpServer::Run(const char * host, int port, int threadId, std::shared_ptr<Rp
 void TcpServer::StopAll() {
     printf("STOP ALL...\n");
     getInst().stopAll();
-//    sleep(1);
+    //    sleep(1);
 }
 
 TcpServer & TcpServer::getInst() {
@@ -52,17 +52,17 @@ TcpServer & TcpServer::getInst() {
 
 int TcpServer::start(const char * host, int port) {
     // 每次调用start启动一个端口
-//    int fd = nn_socket(AF_SP, NN_REP);
-//    if (fd < 0) {
-//        NN_LOG(ERROR, "nn_socket");
-//        return -1;
-//    }
-//
-//    if (nn_bind(fd, url) < 0) {
-//        NN_LOG(ERROR, "nn_bind with fd: " << fd);
-//        nn_close(fd);
-//        return -1;
-//    }
+    //    int fd = nn_socket(AF_SP, NN_REP);
+    //    if (fd < 0) {
+    //        NN_LOG(ERROR, "nn_socket");
+    //        return -1;
+    //    }
+    //
+    //    if (nn_bind(fd, url) < 0) {
+    //        NN_LOG(ERROR, "nn_bind with fd: " << fd);
+    //        nn_close(fd);
+    //        return -1;
+    //    }
 
     struct sockaddr_in servaddr;
     int ssfd;
@@ -90,7 +90,7 @@ int TcpServer::start(const char * host, int port) {
 void TcpServer::stopAll() {
     std::lock_guard<std::mutex> lock(mutex_);
     for (auto & fd : fds_) {
-//        nn_close(fd);
+        //        nn_close(fd);
     }
     fds_.clear();
 }
@@ -101,62 +101,72 @@ void TcpServer::processRecv(int ssfd, int threadId, std::shared_ptr<RpcProcess> 
     }
 
     int sfd;
-    printf("======waiting for client's request======\n");
     while(1) {
+
+        printf("======waiting for client's request======\n");
+
         //阻塞直到有客户端连接，不然多浪费CPU资源。
         if ((sfd = accept(ssfd, (struct sockaddr *) NULL,  NULL)) == -1) {
             printf("accept socket error\n");
             break;
         } else {
             printf("accept socket successful\n");
-            break;
         }
-    }
-    int on = 1;
-    if (setsockopt(sfd, IPPROTO_TCP, TCP_NODELAY, (void *)&on, sizeof(on)) == 0)
-    {
-        printf("TCP_NODELAY\n");
-    }
-
-//    mutex_.lock();
-//    fds_.emplace_back(sfd);
-//    mutex_.unlock();
-
-
-    std::function<void (const char *, int)> cb =
-        [&] (const char * buf, int len) {
-//            auto send_pkt = (Packet *) buf;
-
-//            printf("fd : %d, SEND : %d,  %d\n", sfd, send_pkt->type, send_pkt->len);
-
-            send(sfd, buf, len, 0);
-        };
-
-    char * recv_buf = new char[MAX_PACKET_SIZE];
-    char * send_buf = new char[MAX_PACKET_SIZE];
-
-    while(1) {
-        int rc = recvPack(sfd, recv_buf);
-//        printf("FD : %d, RECV: %d, %d\n",sfd, ((Packet *) recv_buf)->type, ((Packet *) recv_buf)->len);
-        if (rc < 0) {
-            printf("recive error %d\n", sfd);
-            break;
+        
+        int on = 1;
+        if (setsockopt(sfd, IPPROTO_TCP, TCP_NODELAY, (void *)&on, sizeof(on)) == 0)
+        {
+            printf("TCP_NODELAY\n");
         }
 
-        process->Insert(threadId, (Packet *) recv_buf, rc, cb, send_buf);
+        // bool bSet = true;
+        // setsockopt(sfd,SOL_SOCKET,SO_KEEPALIVE,(void*)&bSet,sizeof(bSet));
+
+        // int keepIdle = 1000;
+        // int keepInterval = 5;
+        // int keepCount = 3;
+        //
+        // setsockopt(sfd, SOL_TCP, TCP_KEEPIDLE, (void *)&keepIdle, sizeof(keepIdle));
+        // setsockopt(sfd, SOL_TCP,TCP_KEEPINTVL, (void *)&keepInterval, sizeof(keepInterval));
+        // setsockopt(sfd,SOL_TCP, TCP_KEEPCNT, (void *)&keepCount, sizeof(keepCount));
+        //
+
+        std::function<void (const char *, int)> cb =
+            [&] (const char * buf, int len) {
+                //            auto send_pkt = (Packet *) buf;
+
+                //            printf("fd : %d, SEND : %d,  %d\n", sfd, send_pkt->type, send_pkt->len);
+
+                send(sfd, buf, len, 0);
+            };
+
+        char * recv_buf = new char[MAX_PACKET_SIZE];
+        char * send_buf = new char[MAX_PACKET_SIZE];
+
+        while(1) {
+            int rc = recvPack(sfd, recv_buf);
+            //        printf("FD : %d, RECV: %d, %d\n",sfd, ((Packet *) recv_buf)->type, ((Packet *) recv_buf)->len);
+            if (rc < 0) {
+                // printf("recive error %d\n", sfd);
+                break;
+            }
+
+            process->Insert(threadId, (Packet *) recv_buf, rc, cb, send_buf);
+        }
+
     }
+
+    printf("thread close\n");
 }
 
 int TcpServer::recvPack(int fd, char * buf) {
     auto bytes = recv(fd, buf, MAX_PACKET_SIZE, 0);
-    if (bytes == -1) {
-        printf("recv error\n");
+    if (bytes <= 0) {
         return -1;
     }
     while (bytes < sizeof(int)) {
         auto b = recv(fd, buf + bytes, MAX_PACKET_SIZE, 0);
-        if (b == -1) {
-            printf("recv error\n");
+        if (b <= 0) {
             return -1;
         }
         bytes += b;
@@ -164,8 +174,7 @@ int TcpServer::recvPack(int fd, char * buf) {
     int total = *(int *) buf;
     while (total != bytes) {
         auto b = recv(fd, buf + bytes, MAX_PACKET_SIZE, 0);
-        if (b == -1) {
-            printf("recv error\n");
+        if (b <= 0) {
             return -1;
         }
         bytes += b;
