@@ -23,8 +23,8 @@ const int MAX_PACKET_SIZE = PACKET_HEADER_SIZE + KEY_SIZE + 2 * VALUE_SIZE;
 #pragma pack(1)
 
 struct Packet {
-    uint8_t type= 0;
     u_int32_t len = 0;
+    uint8_t type= 0;
     char buf[0];
 };
 #pragma pack(pop)
