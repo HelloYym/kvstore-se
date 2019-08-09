@@ -36,7 +36,7 @@ public:
         Stop();
     }
 
-    bool Insert(int& threadId, Packet * buf, int len, DoneCbFunc cb);
+    bool Insert(int& threadId, Packet * buf, int len, DoneCbFunc cb, char * send_buf);
 
     bool Run(const char * dir, bool clear);
 
@@ -53,15 +53,15 @@ public:
 protected:
     bool process();
 
-    void processPutKV(int& threadId, Packet * buf, DoneCbFunc cb);
+    void processPutKV(int& threadId, Packet * buf, DoneCbFunc cb, char * send_buf);
 
-    void processGetV(Packet * buf, DoneCbFunc cb);
+    void processGetV(Packet * buf, DoneCbFunc cb, char * send_buf);
 
-    void processResetKeyPosition(int& threadId, Packet * buf, DoneCbFunc cb);
+    void processResetKeyPosition(int& threadId, Packet * buf, DoneCbFunc cb, char * send_buf);
 
-    void processGetK(int& threadId, Packet * buf, DoneCbFunc cb);
+    void processGetK(int& threadId, Packet * buf, DoneCbFunc cb, char * send_buf);
 
-    void processRecoverKeyPosition(int& threadId, Packet * buf, DoneCbFunc cb);
+    void processRecoverKeyPosition(int& threadId, Packet * buf, DoneCbFunc cb, char * send_buf);
 
     void Getfilepath(const char *path, const char *filename,  char *filepath);
 

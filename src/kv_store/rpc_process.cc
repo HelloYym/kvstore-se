@@ -5,27 +5,27 @@
 #include "utils.h"
 
 #include <dirent.h>
-bool RpcProcess::Insert(int& threadId, Packet * buf, int len, DoneCbFunc cb) {
+bool RpcProcess::Insert(int& threadId, Packet * buf, int len, DoneCbFunc cb, char * send_buf) {
     // 校验通过
     switch(buf->type) {
         case KV_OP_PUT_KV:
-            processPutKV(threadId, buf, cb);
+            processPutKV(threadId, buf, cb, send_buf);
             break;
 
         case KV_OP_GET_V:
-            processGetV(buf, cb);
+            processGetV(buf, cb, send_buf);
             break;
 
         case KV_OP_RESET_K:
-            processResetKeyPosition(threadId, buf, cb);
+            processResetKeyPosition(threadId, buf, cb, send_buf);
             break;
 
         case KV_OP_GET_K:
-            processGetK(threadId, buf, cb);
+            processGetK(threadId, buf, cb, send_buf);
             break;
 
         case KV_OP_RECOVER:
-            processRecoverKeyPosition(threadId, buf, cb);
+            processRecoverKeyPosition(threadId, buf, cb, send_buf);
             break;
 
         default:
@@ -51,52 +51,70 @@ void RpcProcess::Stop() {
     sleep(1);
 }
 
-void RpcProcess::processPutKV(int& threadId, Packet * buf, DoneCbFunc cb) {
+void RpcProcess::processPutKV(int& threadId, Packet * buf, DoneCbFunc cb, char * send_buf) {
     // 调用kvengines添加kv
     kv_engines.putKV(buf->buf, buf->buf + KEY_SIZE, threadId);
-    cb(KV_OP_SUCCESS, 0);
+    auto tmp = (Packet *) send_buf;
+    tmp->len = PACKET_HEADER_SIZE;
+    tmp->type = KV_OP_SUCCESS;
+    cb(send_buf, tmp->len);
 }
 
-void RpcProcess::processGetV(Packet * buf, DoneCbFunc cb) {
+void RpcProcess::processGetV(Packet * buf, DoneCbFunc cb, char * send_buf) {
     uint32_t compress = *(uint32_t *)buf->buf;
     int threadId = compress >> 28;
     int offset = compress & 0x0FFFFFFF;
 
-    KVString val;
-    kv_engines.getV(val, offset, threadId);
+    kv_engines.getV(send_buf + PACKET_HEADER_SIZE, offset, threadId);
 
-    cb(val.Buf(), val.Size());
+    auto tmp = (Packet *) send_buf;
+    tmp->len = PACKET_HEADER_SIZE + VALUE_SIZE;
+    tmp->type = KV_OP_SUCCESS;
+    cb(send_buf, tmp->len);
 }
 
-void RpcProcess::processResetKeyPosition(int& threadId, Packet * buf, DoneCbFunc cb) {
+void RpcProcess::processResetKeyPosition(int& threadId, Packet * buf, DoneCbFunc cb, char * send_buf) {
 
     kv_engines.resetKeyPosition(threadId);
 
-    cb(KV_OP_SUCCESS, 0);
+    auto tmp = (Packet *) send_buf;
+    tmp->len = PACKET_HEADER_SIZE;
+    tmp->type = KV_OP_SUCCESS;
+    cb(send_buf, tmp->len);
 }
 
-void RpcProcess::processGetK(int& threadId, Packet * buf, DoneCbFunc cb) {
+void RpcProcess::processGetK(int& threadId, Packet * buf, DoneCbFunc cb, char * send_buf) {
 
     KVString key;
 
     bool has_key = kv_engines.getK(key, threadId);
 
+    auto tmp = (Packet *) send_buf;
+
     if (!has_key) {
-        cb(KV_OP_FAILED, 0);
+        tmp->len = PACKET_HEADER_SIZE;
+        tmp->type = KV_OP_FAILED;
+        cb(send_buf, tmp->len);
     }
     else {
-        cb(key.Buf(), KEY_SIZE);
+        tmp->len = PACKET_HEADER_SIZE + KEY_SIZE;
+        tmp->type = KV_OP_SUCCESS;
+        memcpy(tmp->buf, key.Buf(), 8);
+        cb(send_buf, tmp->len);
     }
 }
 
 
-void RpcProcess::processRecoverKeyPosition(int& threadId, Packet * buf, DoneCbFunc cb) {
+void RpcProcess::processRecoverKeyPosition(int& threadId, Packet * buf, DoneCbFunc cb, char * send_buf) {
 
     auto sum = *(uint32_t *)buf->buf;
 
     kv_engines.recoverKeyPosition(sum, threadId);
 
-    cb(KV_OP_SUCCESS, 0);
+    auto tmp = (Packet *) send_buf;
+    tmp->len = PACKET_HEADER_SIZE;
+    tmp->type = KV_OP_SUCCESS;
+    cb(send_buf, tmp->len);
 }
 
 void RpcProcess::Getfilepath(const char *path, const char *filename,  char *filepath)

@@ -58,7 +58,7 @@ int main(int argc, char * argv[]) {
         return -1;
     }
 
-    const char * host = argv[1];
+    const char * host = argv[1] + 6;
     const char * dir  = argv[2];
     bool clear  = false;
     if (argc == 4) {
@@ -81,13 +81,13 @@ int main(int argc, char * argv[]) {
 
     for (int threadId = 0; threadId < THREAD_NUM; threadId++){
 
-        char url[256];
-        strcpy(url, host);
+//        char url[256];
+//        strcpy(url, host);
 
         int port = 9500 + threadId;
-        strcat(url, ":");
-        strcat(url, std::to_string(port).c_str());
-        int ret = TcpServer::Run((const char *)url, threadId, rpc_process->GetPtr());
+//        strcat(url, ":");
+//        strcat(url, std::to_string(port).c_str());
+        int ret = TcpServer::Run(host, port, threadId, rpc_process->GetPtr());
 
     }
 

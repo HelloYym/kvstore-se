@@ -22,11 +22,11 @@ void KVEngines::putKV(char* key, char * val, int threadId) {
     engine[threadId].putKV(key, val);
 }
 
-void KVEngines::getV(KVString & val, int offset, int threadId) {
+void KVEngines::getV(char * val, int offset, int threadId) {
     engine[threadId].getV(val, offset);
 }
 
-bool KVEngines::getK(KVString & key, int threadId) {
+bool KVEngines::getK(char * key, int threadId) {
     return engine[threadId].getK(key);
 }
 

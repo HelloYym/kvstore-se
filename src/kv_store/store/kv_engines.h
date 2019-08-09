@@ -16,7 +16,7 @@ public:
     void putKV(char * key, char * val, int threadId);
 
     //根据线程id 和 offset 获取 value
-    void getV(KVString & val, int offset, int threadId);
+    void getV(char * val, int offset, int threadId);
 
     //下面三个函数是重启恢复位置。
     // 先调用第一个函数，再循环调用第二个直到false，最后调用最后一个函数。

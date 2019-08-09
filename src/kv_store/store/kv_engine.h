@@ -51,13 +51,13 @@ public:
 
 
     // TODO: 多线程同时读一个文件 readbuf冲突
-    void getV(KVString & val, int offset) {
+    void getV(char * val, int offset) {
         char * buffer = readBuffer.get();
         int indexInReadBuffer = kvLog->readValue(offset, buffer);
         
-        char * buf_ = new char[VALUE_SIZE];
-        memcpy(buf_, buffer + indexInReadBuffer * VALUE_SIZE, VALUE_SIZE);
-        val.Reset(buf_, VALUE_SIZE);
+//        char * buf_ = new char[VALUE_SIZE];
+        memcpy(val, buffer + indexInReadBuffer * VALUE_SIZE, VALUE_SIZE);
+//        val.Reset(buf_, VALUE_SIZE);
     }
 
 
