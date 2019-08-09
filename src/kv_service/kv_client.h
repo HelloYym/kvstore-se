@@ -43,6 +43,7 @@ class KVClient {
 
             printf("Client init start %s, %d\n", host, id);
 
+            printf("%d %d\n", sizeof(u_int8_t), sizeof(u_int32_t));
             this->id = id;
 
             // connect to storage
@@ -81,10 +82,9 @@ class KVClient {
             printf("start recover index: %d.\n", id);
             reset();
             while (getKey(nums)) {
+                printf("NUM : %d\n", nums);
                 nums ++;
             }
-
-//            nums = getAllKeys();
 
             printf("recover threadId %d. time spent is %lims\n", id, (now() - start).count());
             printf("======key num: %d\n", nums);
@@ -96,15 +96,15 @@ class KVClient {
                 recoverFlag = true;
                 recoverIndex();
             }
-            if (setTimes == 0) {
-                this->start = now();
-            }
-
-            if (setTimes % 500000 == 0) {
-                printf("ID : %d,  Set : %ld\n", id, *((u_int64_t *) key.Buf()));
-                printf("write %d. time spent is %lims\n", setTimes, (now() - start).count());
-            }
-            setTimes ++;
+//            if (setTimes == 0) {
+//                this->start = now();
+//            }
+//
+//            if (setTimes % 500000 == 0) {
+//                printf("ID : %d,  Set : %ld\n", id, *((u_int64_t *) key.Buf()));
+//                printf("write %d. time spent is %lims\n", setTimes, (now() - start).count());
+//            }
+//            setTimes ++;
 
             sendKV(key, val);
             HashLogLF::getInstance().put(*((u_int64_t *) key.Buf()), (id << 28) + nums);
@@ -159,9 +159,9 @@ class KVClient {
             auto send_len = KEY_SIZE + VALUE_SIZE + PACKET_HEADER_SIZE;
             auto & send_pkt = *(Packet *) sendBuf;
             send_pkt.len = send_len;
+            send_pkt.type = KV_OP_PUT_KV;
             memcpy(send_pkt.buf, key.Buf(), KEY_SIZE);
             memcpy(send_pkt.buf + KEY_SIZE, val.Buf(), VALUE_SIZE);
-            send_pkt.type = KV_OP_PUT_KV;
 
             sendPack(fd, sendBuf);
             recvPack(fd, recvBuf);
@@ -227,6 +227,8 @@ class KVClient {
 
         void sendPack(int fd, char * buf) {
             auto send_pkt = (Packet *) buf;
+            printf("FD : %d, SEND : %d,  %d\n", fd, send_pkt->type, send_pkt->len);
+
             if (send(fd, buf, send_pkt->len, 0) == -1) {
                 printf("send error\n");
             }
@@ -234,18 +236,19 @@ class KVClient {
 
         void recvPack(int fd, char * buf) {
             auto bytes = recv(fd, buf, MAX_PACKET_SIZE, 0);
-            if (bytes == -1) {
+            if (bytes == -1 || bytes == 0) {
                 printf("recv error\n"); return;
             }
             while (bytes < sizeof(int)) {
                 auto b = recv(fd, buf + bytes, MAX_PACKET_SIZE, 0);
-                if (b == -1) {
+                if (b <= 0) {
                     printf("recv error\n"); return;
                 }
                 bytes += b;
             }
             int total = *(int *) buf;
             while (total != bytes) {
+                printf("RECV FD : %d, bytes: %d, total: %d\n", fd, bytes, total);
                 auto b = recv(fd, buf + bytes, MAX_PACKET_SIZE, 0);
                 if (b == -1) {
                     printf("recv error\n"); return;
