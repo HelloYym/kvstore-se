@@ -12,7 +12,7 @@ const int VALUE_SIZE = 4096;
 const size_t VALUE_LOG_SIZE = NUM_PER_SLOT * VALUE_SIZE;
 const size_t KEY_LOG_SIZE = NUM_PER_SLOT * KEY_SIZE;
 //hash的容量
-const int HASH_CAPACITY = 2 * NUM_PER_SLOT * THREAD_NUM / HASH_NUM;
+const int HASH_CAPACITY = 2 * NUM_PER_SLOT / HASH_NUM * THREAD_NUM;
 //读缓存大小（多少块4KB）
 const int READ_CACHE_SIZE = 256 * 10;
 //写缓存大小（多少块4KB）

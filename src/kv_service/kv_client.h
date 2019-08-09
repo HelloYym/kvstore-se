@@ -52,19 +52,19 @@ class KVClient {
                 exit(-1);
             }
             int on = 1;
-            if (setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, (void *)&on, sizeof(on)) == 0)
-            {
-                printf("TCP_NODELAY\n");
-            }
 
             server_addr.sin_family = AF_INET;
             server_addr.sin_port = htons(port);
             server_addr.sin_addr.s_addr = inet_addr(host + 6);
             bzero(&(server_addr.sin_zero),sizeof(server_addr.sin_zero));
 
-            if (connect(fd, (struct sockaddr *)&server_addr,sizeof(struct sockaddr_in)) == -1){
-                printf("connect error\n");
-                exit(-1);
+            while (connect(fd, (struct sockaddr *)&server_addr,sizeof(struct sockaddr_in)) == -1){
+                sleep(1);
+            }
+
+            if (setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, (void *)&on, sizeof(on)) == 0)
+            {
+                printf("TCP_NODELAY\n");
             }
 
             KV_LOG(INFO) << "connect to store node success. fd: " << fd;
