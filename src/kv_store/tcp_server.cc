@@ -27,15 +27,15 @@ TcpServer::~TcpServer() {
 int TcpServer::Run(const char * host, int port, int threadId, std::shared_ptr<RpcProcess> rpc_process) {
     auto & inst = getInst();
     // 启动一个新端口
-    int sfd = inst.start(host, port);
+    int ssfd = inst.start(host, port);
 
-    if (sfd != -1) {
+    if (ssfd != -1) {
         // 启动一个线程监听新端口
-        std::thread recv(&TcpServer::processRecv, sfd, threadId, rpc_process);
+        std::thread recv(&TcpServer::processRecv, ssfd, threadId, rpc_process);
         recv.detach();
     }
 
-    return sfd;
+    return ssfd;
 }
 
 
@@ -65,7 +65,7 @@ int TcpServer::start(const char * host, int port) {
 //    }
 
     struct sockaddr_in servaddr;
-    int ssfd, sfd;
+    int ssfd;
 
     memset(&servaddr, 0, sizeof(servaddr));
     if( (ssfd = socket(AF_INET, SOCK_STREAM, 0)) == -1 ){
@@ -82,27 +82,8 @@ int TcpServer::start(const char * host, int port) {
     if(listen(ssfd, 10) == -1){
         printf("listen socket error\n");
     }
-    printf("======waiting for client's request======\n");
-    while(1) {
-        //阻塞直到有客户端连接，不然多浪费CPU资源。
-        if ((sfd = accept(ssfd, (struct sockaddr *) NULL, NULL)) == -1) {
-            printf("accept socket error\n");
-            break;
-        } else {
-            printf("accept socket successful\n");
-        }
-    }
-    int on = 1;
-    if (setsockopt(sfd, IPPROTO_TCP, TCP_NODELAY, (void *)&on, sizeof(on)) == 0)
-    {
-        printf("TCP_NODELAY\n");
-    }
 
-    mutex_.lock();
-    fds_.emplace_back(sfd);
-    mutex_.unlock();
-
-    return sfd;
+    return ssfd;
 }
 
 
@@ -114,10 +95,34 @@ void TcpServer::stopAll() {
     fds_.clear();
 }
 
-void TcpServer::processRecv(int sfd, int threadId, std::shared_ptr<RpcProcess> process) {
-    if (sfd == -1 || process == nullptr) {
+void TcpServer::processRecv(int ssfd, int threadId, std::shared_ptr<RpcProcess> process) {
+    if (ssfd == -1 || process == nullptr) {
         return ;
     }
+
+    int sfd;
+    printf("======waiting for client's request======\n");
+    while(1) {
+        //阻塞直到有客户端连接，不然多浪费CPU资源。
+        if ((sfd = accept(ssfd, (struct sockaddr *) NULL,  NULL)) == -1) {
+            printf("accept socket error\n");
+            break;
+        } else {
+            printf("accept socket successful\n");
+            break;
+        }
+    }
+    int on = 1;
+    if (setsockopt(sfd, IPPROTO_TCP, TCP_NODELAY, (void *)&on, sizeof(on)) == 0)
+    {
+        printf("TCP_NODELAY\n");
+    }
+
+//    mutex_.lock();
+//    fds_.emplace_back(sfd);
+//    mutex_.unlock();
+
+
     std::function<void (const char *, int)> cb =
         [&] (const char * buf, int len) {
             send(sfd, buf, len, 0);

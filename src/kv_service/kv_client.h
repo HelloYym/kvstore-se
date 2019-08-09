@@ -59,7 +59,7 @@ class KVClient {
 
             server_addr.sin_family = AF_INET;
             server_addr.sin_port = htons(port);
-            server_addr.sin_addr.s_addr = inet_addr(host);
+            server_addr.sin_addr.s_addr = inet_addr(host + 6);
             bzero(&(server_addr.sin_zero),sizeof(server_addr.sin_zero));
 
             if (connect(fd, (struct sockaddr *)&server_addr,sizeof(struct sockaddr_in)) == -1){
