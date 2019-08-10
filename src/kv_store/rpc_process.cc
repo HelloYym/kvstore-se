@@ -54,61 +54,28 @@ void RpcProcess::Stop() {
 void RpcProcess::processPutKV(int& threadId, Packet * buf, DoneCbFunc cb, char * send_buf) {
     // 调用kvengines添加kv
     kv_engines.putKV(buf->buf, buf->buf + KEY_SIZE, threadId);
-    auto & tmp = * (Packet *) send_buf;
-    tmp.len = PACKET_HEADER_SIZE;
-    tmp.type = KV_OP_SUCCESS;
-    cb(send_buf, tmp.len);
+
+    cb("1", 1);
 }
 
 void RpcProcess::processGetV(Packet * buf, DoneCbFunc cb, char * send_buf) {
     uint32_t compress = *(uint32_t *)buf->buf;
     int threadId = compress >> 28;
     int offset = compress & 0x0FFFFFFF;
-
-    auto & tmp = * (Packet *) send_buf;
-    tmp.len = PACKET_HEADER_SIZE + VALUE_SIZE;
-    tmp.type = KV_OP_SUCCESS;
-    kv_engines.getV(tmp.buf, offset, threadId);
-    cb(send_buf, tmp.len);
+    kv_engines.getV(send_buf, offset, threadId);
+    cb(send_buf, VALUE_SIZE);
 }
 
 void RpcProcess::processResetKeyPosition(int& threadId, Packet * buf, DoneCbFunc cb, char * send_buf) {
-
     kv_engines.resetKeyPosition(threadId);
-
-    auto & tmp = * (Packet *) send_buf;
-    tmp.len = PACKET_HEADER_SIZE;
-    tmp.type = KV_OP_SUCCESS;
-    cb(send_buf, tmp.len);
+    cb("1", 1);
 }
 
 void RpcProcess::processGetK(int& threadId, Packet * buf, DoneCbFunc cb, char * send_buf) {
 
     auto & tmp = * (Packet *) send_buf;
-//    bool has_key = kv_engines.getK(tmp.buf, threadId);
-//
-//    if (!has_key) {
-//        tmp.len = PACKET_HEADER_SIZE;
-//        tmp.type = KV_OP_FAILED;
-//        cb(send_buf, tmp.len);
-//
-//    }
-//    else {
-//        tmp.len = PACKET_HEADER_SIZE + KEY_SIZE;
-//        tmp.type = KV_OP_SUCCESS;
-//        cb(send_buf, tmp.len);
-//    }
-    int i = 0;
-    for (; i < KEY_NUM_TCP; ++i) {
-        bool has_key = kv_engines.getK(tmp.buf + i * 8, threadId);
-        if (!has_key)
-            break;
-    }
-
-    tmp.len = PACKET_HEADER_SIZE + KEY_SIZE * i;
-    tmp.type = KV_OP_SUCCESS;
-    cb(send_buf, tmp.len);
-
+    char * key_buf = kv_engines.getK(threadId);
+    cb(key_buf, KEY_NUM_TCP * KEY_SIZE);
 }
 
 
@@ -118,10 +85,7 @@ void RpcProcess::processRecoverKeyPosition(int& threadId, Packet * buf, DoneCbFu
 
     kv_engines.recoverKeyPosition(sum, threadId);
 
-    auto & tmp = * (Packet *) send_buf;
-    tmp.len = PACKET_HEADER_SIZE;
-    tmp.type = KV_OP_SUCCESS;
-    cb(send_buf, tmp.len);
+    cb("1", 1);
 }
 
 void RpcProcess::Getfilepath(const char *path, const char *filename,  char *filepath)
