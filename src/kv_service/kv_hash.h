@@ -9,6 +9,12 @@
 #include <assert.h>
 #include <cmath>
 #include <chrono>
+#include <vector>
+#include <iostream>
+#include <algorithm>
+#include <mutex>
+
+#include "params.h"
 
 class KVHash {
 public:

@@ -143,7 +143,7 @@ class KVClient {
 
     private:
 
-        int id;
+        u_int32_t id;
 
         bool recoverFlag = false;
 
