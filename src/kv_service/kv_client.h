@@ -67,6 +67,13 @@ class KVClient {
                 printf("TCP_NODELAY\n");
             }
 
+            // 接收缓冲区
+            int nRecvBuf=32*1024;//设置为32K
+            setsockopt(fd,SOL_SOCKET,SO_RCVBUF,(const char*)&nRecvBuf,sizeof(int));
+            //发送缓冲区
+            int nSendBuf=32*1024;//设置为32K
+            setsockopt(fd,SOL_SOCKET,SO_SNDBUF,(const char*)&nSendBuf,sizeof(int));
+
             KV_LOG(INFO) << "connect to store node success. fd: " << fd;
 
             HashLogLF::getInstance().client_on();
@@ -80,7 +87,7 @@ class KVClient {
             printf("start recover index: %d.\n", id);
             reset();
             while (getKey(nums)) {
-                nums ++;
+//                nums ++;
             }
 
             printf("recover threadId %d. time spent is %lims\n", id, (now() - start).count());
@@ -167,7 +174,7 @@ class KVClient {
             recvPack(fd, recvBuf);
         }
 
-        int getKey(uint32_t& sum) {
+        bool getKey(uint32_t& sum) {
             auto & send_pkt = *(Packet *) sendBuf;
             send_pkt.len = PACKET_HEADER_SIZE;
             send_pkt.type = KV_OP_GET_K;
@@ -176,14 +183,27 @@ class KVClient {
             recvPack(fd, recvBuf);
 
             auto & recv_pkt = *(Packet *) recvBuf;
-            if (recv_pkt.len == PACKET_HEADER_SIZE) {
-                //No more keys
-                printf("NO KEYS\n");
-                return 0;
-            } else {
-                HashLogLF::getInstance().put(*((u_int64_t *) recv_pkt.buf), (id << 28) + sum);
-                return 1;
+
+            int keyNum = (recv_pkt.len - PACKET_HEADER_SIZE) / 8;
+            for (int i = 0; i < keyNum; ++i) {
+                HashLogLF::getInstance().put(*((u_int64_t *) (recv_pkt.buf + 8 * i)), (id << 28) + sum);
+                sum++;
             }
+
+            if (recv_pkt.len < MAX_PACKET_SIZE){
+                return false;
+            } else {
+                return true;
+            }
+
+//            if (recv_pkt.len == PACKET_HEADER_SIZE) {
+//                //No more keys
+//                printf("NO KEYS\n");
+//                return 0;
+//            } else {
+//                HashLogLF::getInstance().put(*((u_int64_t *) recv_pkt.buf), (id << 28) + sum);
+//                return 1;
+//            }
         }
 
         int getValue(uint32_t pos, KVString &val) {

@@ -85,19 +85,30 @@ void RpcProcess::processResetKeyPosition(int& threadId, Packet * buf, DoneCbFunc
 void RpcProcess::processGetK(int& threadId, Packet * buf, DoneCbFunc cb, char * send_buf) {
 
     auto & tmp = * (Packet *) send_buf;
-    bool has_key = kv_engines.getK(tmp.buf, threadId);
-
-    if (!has_key) {
-        tmp.len = PACKET_HEADER_SIZE;
-        tmp.type = KV_OP_FAILED;
-        cb(send_buf, tmp.len);
-
+//    bool has_key = kv_engines.getK(tmp.buf, threadId);
+//
+//    if (!has_key) {
+//        tmp.len = PACKET_HEADER_SIZE;
+//        tmp.type = KV_OP_FAILED;
+//        cb(send_buf, tmp.len);
+//
+//    }
+//    else {
+//        tmp.len = PACKET_HEADER_SIZE + KEY_SIZE;
+//        tmp.type = KV_OP_SUCCESS;
+//        cb(send_buf, tmp.len);
+//    }
+    int i = 0;
+    for (; i < KEY_NUM_TCP; ++i) {
+        bool has_key = kv_engines.getK(tmp.buf + i * 8, threadId);
+        if (!has_key)
+            break;
     }
-    else {
-        tmp.len = PACKET_HEADER_SIZE + KEY_SIZE;
-        tmp.type = KV_OP_SUCCESS;
-        cb(send_buf, tmp.len);
-    }
+
+    tmp.len = PACKET_HEADER_SIZE + KEY_SIZE * i;
+    tmp.type = KV_OP_SUCCESS;
+    cb(send_buf, tmp.len);
+
 }
 
 

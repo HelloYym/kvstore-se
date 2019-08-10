@@ -119,6 +119,13 @@ void TcpServer::processRecv(int ssfd, int threadId, std::shared_ptr<RpcProcess> 
             printf("TCP_NODELAY\n");
         }
 
+        // 接收缓冲区
+        int nRecvBuf=32*1024;//设置为32K
+        setsockopt(sfd,SOL_SOCKET,SO_RCVBUF,(const char*)&nRecvBuf,sizeof(int));
+        //发送缓冲区
+        int nSendBuf=32*1024;//设置为32K
+        setsockopt(sfd,SOL_SOCKET,SO_SNDBUF,(const char*)&nSendBuf,sizeof(int));
+
         // bool bSet = true;
         // setsockopt(sfd,SOL_SOCKET,SO_KEEPALIVE,(void*)&bSet,sizeof(bSet));
 
