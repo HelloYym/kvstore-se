@@ -24,19 +24,19 @@ private:
 
     //对应KeyFile
     u_int64_t *keyBuffer;
-    int keyBufferPosition;
+    size_t keyBufferPosition;
     char *cacheBuffer;
-    int cacheBufferPosition;
+    size_t cacheBufferPosition;
 
     //当前读缓存块是从第几个开始
-    int readCacheStartNo;
+    long readCacheStartNo;
 
 public:
     KVLog(const int &fd, char *cacheBuffer, u_int64_t *keyBuffer) :
             fd(fd), filePosition(0),
             keyBuffer(keyBuffer), keyBufferPosition(0),
             cacheBuffer(cacheBuffer), cacheBufferPosition(0),
-            readCacheStartNo(INT_MIN){
+            readCacheStartNo(LONG_MIN){
     }
 
     ~KVLog() {
@@ -62,7 +62,7 @@ public:
     }
 
     //返回值是要读的值是读缓存块的第几个
-    inline int readValue(int index, char *value) {
+    inline int readValue(size_t index, char *value) {
         //如果要读的value在mmap中
         if (this->filePosition <= index * VALUE_SIZE) {
             auto pos = index % PAGE_PER_BLOCK;
@@ -74,7 +74,7 @@ public:
         else
             {
             //如果当前要读的命中读缓存块
-            int now = index / READ_CACHE_SIZE;
+            size_t now = index / READ_CACHE_SIZE;
             if (now == readCacheStartNo / READ_CACHE_SIZE) {
                 return index % READ_CACHE_SIZE;
             }
@@ -91,12 +91,11 @@ public:
         }
     }
 
-    inline void preadValue(int pos, char *value) {
+    inline void preadValue(size_t pos, char *value) {
         //如果要读的value在mmap中
         if (this->filePosition <= pos * VALUE_SIZE) {
             auto p = pos % PAGE_PER_BLOCK;
             memcpy(value, cacheBuffer + (p * VALUE_SIZE), VALUE_SIZE);
-            readCacheStartNo = INT_MIN;
             return;
         } else {
             pread(this->fd, value, VALUE_SIZE, (pos * VALUE_SIZE));
@@ -104,7 +103,7 @@ public:
     }
 
     //再次open时恢复写的位置
-    void recover(int sum) {
+    void recover(size_t sum) {
         this->keyBufferPosition = sum;
         auto cacheSize = sum % PAGE_PER_BLOCK;
         if (cacheSize == 0) {

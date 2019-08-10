@@ -58,7 +58,7 @@ public:
 //        char * buf_ = new char[VALUE_SIZE];
 //        memcpy(val, buffer + indexInReadBuffer * VALUE_SIZE, VALUE_SIZE);
 //        val.Reset(buf_, VALUE_SIZE);
-        kvLog->preadValue(offset, val);
+        kvLog->preadValue((size_t)offset, val);
     }
 
 
@@ -71,7 +71,7 @@ public:
     }
 
     void recoverKeyPosition(int sum) {
-        kvLog->recover(sum);
+        kvLog->recover((size_t)sum);
     }
 
 
