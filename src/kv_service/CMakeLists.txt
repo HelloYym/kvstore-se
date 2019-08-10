@@ -16,7 +16,7 @@ link_directories(
 
 set(SRC_SERVICE
     ${SRC_BASE}/kv_service.cc
-    ${SRC_BASE}/kv_intf.cc kv_hashlog_lf.h)
+    ${SRC_BASE}/kv_intf.cc kv_hashlog.h)
 
 add_library(${PROJECT_NAME} SHARED ${SRC_SERVICE})
 target_link_libraries(${PROJECT_NAME} libnanomsg.a pthread anl)

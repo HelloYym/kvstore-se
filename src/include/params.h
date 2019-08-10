@@ -4,8 +4,8 @@
 #include <string>
 
 const int THREAD_NUM = 16;
-const int HASH_NUM = 16;
-const int NUM_PER_SLOT = 4 * 1024 * 1024;
+const int HASH_NUM = 8;
+const int NUM_PER_SLOT = 4 * 1024 * 32;
 
 const int KEY_SIZE = 8;
 const size_t VALUE_SIZE = 4096;

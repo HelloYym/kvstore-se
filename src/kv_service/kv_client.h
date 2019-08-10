@@ -20,7 +20,7 @@
 #include <arpa/inet.h>
 #include <netinet/tcp.h>
 
-#include "kv_hashlog_lf.h"
+#include "kv_hashlog.h"
 #include "kv_string.h"
 #include "params.h"
 #include "utils.h"
@@ -35,7 +35,7 @@ class KVClient {
             close(fd);
             nums = 0;
             recoverFlag = false;
-            HashLogLF::getInstance().close();
+            HashLog::getInstance().close();
             printf("Client close over %d\n", id);
         }
 
@@ -76,7 +76,7 @@ class KVClient {
 
             KV_LOG(INFO) << "connect to store node success. fd: " << fd;
 
-            HashLogLF::getInstance().client_on();
+            HashLog::getInstance().client_on();
             this->start = now();
 
             printf("Client init over %s, %d\n", host, id);
@@ -93,8 +93,8 @@ class KVClient {
             printf("recover threadId %d. time spent is %lims\n", id, (now() - start).count());
             printf("======key num: %d\n", nums);
             recover(nums);
-            HashLogLF::getInstance().hash_has_finish_1();
-            while (!HashLogLF::getInstance().hash_has_finish()) {
+            HashLog::getInstance().hash_has_finish_1();
+            while (!HashLog::getInstance().hash_has_finish()) {
                 sleep(1);
             }
         }
@@ -108,14 +108,14 @@ class KVClient {
                 this->start = now();
             }
 
-            if (setTimes % 500000 == 0) {
-                printf("ID : %d,  Set : %ld\n", id, *((u_int64_t *) key.Buf()));
+            if (setTimes % 1000000 == 0 || setTimes < 10) {
+                printf("ID : %d,  Set : %lu\n", id, *((u_int64_t *) key.Buf()));
                 printf("write %d. time spent is %lims\n", setTimes, (now() - start).count());
             }
             setTimes ++;
 
             sendKV(key, val);
-            HashLogLF::getInstance().put(*((u_int64_t *) key.Buf()), (id << 28) + nums);
+            HashLog::getInstance().put(*((u_int64_t *) key.Buf()), (id << 28) + nums);
             nums++;
             return 1;
         }
@@ -125,14 +125,15 @@ class KVClient {
                 recoverFlag = true;
                 recoverIndex();
             }
-            auto pos = HashLogLF::getInstance().find(*((u_int64_t *) key.Buf()));
+            u_int32_t pos;
+            if (!HashLog::getInstance().find(*(u_int64_t *) key.Buf(), pos)) return 0;
 
             if (getTimes == 0) {
                 this->start = now();
             }
-            if (getTimes % 500000 == 0) {
-                printf("ID : %d,  Get : %ld,  threadId : %d, pos : %d\n",
-                       id, *((u_int64_t *) key.Buf()), (uint32_t)pos>>28, pos & 0x0FFFFFFF);
+            if (getTimes % 1000000 == 0 || getTimes < 10) {
+                printf("ID : %d,  Get : %lu,  threadId : %d, pos : %d\n",
+                       id, *((u_int64_t *) key.Buf()), pos>>28, pos & 0x0FFFFFFF);
                 printf("read %d. time spent is %lims\n", getTimes, (now() - start).count());
             }
             getTimes ++;
@@ -186,7 +187,7 @@ class KVClient {
 
             int keyNum = (recv_pkt.len - PACKET_HEADER_SIZE) / 8;
             for (int i = 0; i < keyNum; ++i) {
-                HashLogLF::getInstance().put(*((u_int64_t *) (recv_pkt.buf + 8 * i)), (id << 28) + sum);
+                HashLog::getInstance().put(*((u_int64_t *) (recv_pkt.buf + 8 * i)), (id << 28) + sum);
                 sum++;
             }
 
