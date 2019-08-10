@@ -9,6 +9,12 @@
 #include <assert.h>
 #include <cmath>
 #include <chrono>
+#include <vector>
+#include <iostream>
+#include <algorithm>
+#include <mutex>
+
+#include "params.h"
 
 class KVHash {
 public:
@@ -27,7 +33,7 @@ public:
         return assigned;
     }
 
-    int put(const long &key, const int &value) {
+    int put(const long &key, const u_int32_t &value) {
         assert(this->assigned < mask + 1);
         if(key == 0) {
             hasEmptyKey = true;
@@ -53,25 +59,31 @@ public:
 
     };
 
-    int getOrDefault(const long & key, const int &defaultValue) {
+    bool get(const long & key, u_int32_t &val) {
         if(key == 0) {
-            return hasEmptyKey ? values[mask + 1]:defaultValue;
+            if (hasEmptyKey) {
+                val = values[mask + 1];
+                return true;
+            } else {
+                return false;
+            }
         } else {
             int slot = hashKey(key) & mask;
             long exsisting;
             while((exsisting = keys[slot])!=0) {
                 if(exsisting == key) {
-                    return values[slot];
+                    val = values[slot];
+                    return true;
                 }
                 slot = (slot + 1) & mask;
             }
-            return defaultValue;
+            return false;
         }
     }
 
 private:
     long *keys;
-    int *values;
+    u_int32_t *values;
     int keyMixer;
     int assigned;
     int mask;
@@ -81,7 +93,7 @@ private:
         int arraySize = capacity;
         int emptyElementSlot = 1;
         this->keys = static_cast<long *>(malloc((arraySize + emptyElementSlot) * sizeof(long)));
-        this->values = static_cast<int *>(malloc((arraySize + emptyElementSlot) * sizeof(int)));
+        this->values = static_cast<u_int32_t *>(malloc((arraySize + emptyElementSlot) * sizeof(u_int32_t)));
         this->mask = arraySize - 1;
 
     }
