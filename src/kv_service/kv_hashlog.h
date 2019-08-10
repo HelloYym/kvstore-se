@@ -8,6 +8,7 @@
 #include <iostream>
 #include <algorithm>
 #include <mutex>
+#include <condition_variable>
 
 #include "kv_hash.h"
 #include "params.h"
@@ -22,6 +23,7 @@ private:
     int hash_finsh;
     std::mutex mutex_[HASH_NUM];
     std::mutex mutex1;
+    std::condition_variable cond;
 
     HashLog(): client_ref(0), hash_finsh(0) {
         init();
@@ -55,19 +57,15 @@ public:
         hash_finsh += 1;
     }
 
-    void hash_has_finish_1() {
-        std::lock_guard<std::mutex> lock(mutex1);
-        hash_finsh--;
-        if (hash_finsh == 0) {
-            for (int i = 0; i < HASH_NUM; i++) {
-                printf("HASH : %d, %d\n", i, kvHash[i]->size());
-            }
-        }
-    }
 
-    bool hash_has_finish() {
-        std::lock_guard<std::mutex> lock(mutex1);
-        return hash_finsh == 0;
+    void wait_finish() {
+        std::unique_lock <std::mutex> lck(mutex1);
+        hash_finsh --;
+        if (hash_finsh != 0) {
+            while (hash_finsh != 0) cond.wait(lck);
+        } else {
+            cond.notify_all();
+        }
     }
 
     void close() {
