@@ -20,4 +20,10 @@ const int PAGE_PER_BLOCK = 256;
 //写缓存大小
 const size_t BLOCK_SIZE = PAGE_PER_BLOCK * VALUE_SIZE;
 
+const int KEY_NUM_TCP = 1024;//一次最多传输KEY的数量
+
+const int PACKET_HEADER_SIZE = sizeof(int8_t) + sizeof(u_int32_t);
+const int MAX_PACKET_SIZE = PACKET_HEADER_SIZE + KEY_SIZE * KEY_NUM_TCP;
+
+
 #endif //PARAMS_H

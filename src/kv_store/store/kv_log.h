@@ -58,11 +58,10 @@ public:
         this->filePosition = sum * VALUE_SIZE;
     }
 
-    inline bool getKey(char *key) {
-        uint64_t k = *(keyBuffer + keyBufferPosition);
-        memcpy(key, (char *) (keyBuffer + keyBufferPosition), 8);
-        keyBufferPosition++;
-        return k != 0 || (k == 0 && *(keyBuffer + keyBufferPosition) != 0);
+    char * getKey() {
+        char * key = (char *) (keyBuffer + keyBufferPosition);
+        keyBufferPosition += KEY_NUM_TCP;
+        return key;
     }
 
     inline void resetKeyPosition() {
