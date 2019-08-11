@@ -70,7 +70,7 @@ public:
         int nRecvBuf = 32 * 1024;//设置为32K
         setsockopt(fd, SOL_SOCKET, SO_RCVBUF, (const char *) &nRecvBuf, sizeof(int));
         //发送缓冲区
-        int nSendBuf = 0;//设置为32K
+        int nSendBuf = 32*1024;//设置为32K
         setsockopt(fd, SOL_SOCKET, SO_SNDBUF, (const char *) &nSendBuf, sizeof(int));
 
         KV_LOG(INFO) << "connect to store node success. fd: " << fd;

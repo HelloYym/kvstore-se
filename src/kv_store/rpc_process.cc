@@ -42,6 +42,9 @@ bool RpcProcess::Run(const char * dir, bool clear) {
     if (clear) {
         DeleteFile(dir);
     }
+    if (access(dir, 0) == -1) {
+        mkdir(dir, 0777);
+    }
     kv_engines.Init(dir);
 }
 
