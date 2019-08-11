@@ -71,7 +71,7 @@ class KVClient {
             int nRecvBuf=32*1024;//设置为32K
             setsockopt(fd,SOL_SOCKET,SO_RCVBUF,(const char*)&nRecvBuf,sizeof(int));
             //发送缓冲区
-            int nSendBuf=0;//设置为32K
+            int nSendBuf=32*1024;//设置为32K
             setsockopt(fd,SOL_SOCKET,SO_SNDBUF,(const char*)&nSendBuf,sizeof(int));
 
             KV_LOG(INFO) << "connect to store node success. fd: " << fd;
@@ -112,7 +112,7 @@ class KVClient {
             setTimes ++;
 
             sendKV(key, val);
-            HashLog::getInstance().put(*((u_int64_t *) key.Buf()), (id << 28) + nums);
+            HashLog::getInstance().put(*((u_int64_t *) key.Buf()), (id << 28) + nums, id);
             nums++;
             return 1;
         }
@@ -123,7 +123,7 @@ class KVClient {
                 recoverIndex();
             }
             u_int32_t pos;
-            if (!HashLog::getInstance().find(*(u_int64_t *) key.Buf(), pos)) return 0;
+            if (!HashLog::getInstance().find(*(u_int64_t *) key.Buf(), pos, id)) return 0;
 
             if (getTimes == 0) {
                 this->start = now();
@@ -184,7 +184,7 @@ class KVClient {
 
             int keyNum = (recv_pkt.len - PACKET_HEADER_SIZE) / 8;
             for (int i = 0; i < keyNum; ++i) {
-                HashLog::getInstance().put(*((u_int64_t *) (recv_pkt.buf + 8 * i)), (id << 28) + sum);
+                HashLog::getInstance().put(*((u_int64_t *) (recv_pkt.buf + 8 * i)), (id << 28) + sum, id);
                 sum++;
             }
 
