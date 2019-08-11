@@ -33,8 +33,8 @@ public:
     void clientClose() {
         printf("Client close start %d\n", id);
         close(fd);
-        nums = 0;
-        recoverFlag = false;
+        delete [] sendBuf;
+        delete [] recvBuf;
         HashLog::getInstance().close();
         printf("Client close over %d\n", id);
     }
@@ -44,6 +44,12 @@ public:
         printf("Client init start %s, %d\n", host, id);
 
         this->id = id;
+        nums = 0;
+        recoverFlag = false;
+        sendBuf = new char[MAX_PACKET_SIZE];
+        recvBuf = new char[MAX_PACKET_SIZE];
+        setTimes = 0;
+        getTimes = 0;
 
         // connect to storage
         auto port = 9500 + id;
@@ -105,13 +111,13 @@ public:
         }
 
         if (setTimes % 1000000 == 0 || setTimes < 10) {
-            printf("ID : %d,  Set : %lu\n", id, *((u_int64_t *) key.Buf()));
+            printf("ID : %d,  Set : %lu\n", id, *((uint64_t *) key.Buf()));
             printf("write %d. time spent is %lims\n", setTimes, (now() - start).count());
         }
         setTimes++;
 
         sendKV(key, val);
-        HashLog::getInstance().put(*((u_int64_t *) key.Buf()), (id << 28) + nums, id);
+        HashLog::getInstance().put(*((uint64_t *) key.Buf()), (id << 28) + nums, id);
         nums++;
         return 1;
     }
@@ -121,8 +127,8 @@ public:
             recoverFlag = true;
             recoverIndex();
         }
-        u_int32_t pos;
-        while (!HashLog::getInstance().find(*(u_int64_t *) key.Buf(), pos, id)) {
+        uint32_t pos;
+        while (!HashLog::getInstance().find(*(uint64_t *) key.Buf(), pos, id)) {
             sleep(5);
             printf("wait to find pos from hash\n");
         }
@@ -132,7 +138,7 @@ public:
         }
         if (getTimes % 1000000 == 0 || getTimes < 10) {
             printf("ID : %d,  Get : %lu,  threadId : %d, pos : %d\n",
-                   id, *((u_int64_t *) key.Buf()), pos >> 28, pos & 0x0FFFFFFF);
+                   id, *((uint64_t *) key.Buf()), pos >> 28, pos & 0x0FFFFFFF);
             printf("read %d. time spent is %lims\n", getTimes, (now() - start).count());
         }
         getTimes++;
@@ -142,18 +148,18 @@ public:
 
 private:
 
-    u_int32_t id;
+    uint32_t id;
 
-    bool recoverFlag = false;
+    bool recoverFlag;
 
-    char *sendBuf = new char[MAX_PACKET_SIZE];
-    char *recvBuf = new char[MAX_PACKET_SIZE];
+    char *sendBuf;
+    char *recvBuf;
 
     int fd;
 
     struct sockaddr_in server_addr;
 
-    uint32_t nums = 0;
+    uint32_t nums;
 
     milliseconds now() {
         return duration_cast<milliseconds>(system_clock::now().time_since_epoch());
@@ -161,7 +167,7 @@ private:
 
     milliseconds start;
 
-    int setTimes = 0, getTimes = 0;
+    int setTimes, getTimes;
 
     void sendKV(KVString &key, KVString &val) {
         auto send_len = KEY_SIZE + VALUE_SIZE + PACKET_HEADER_SIZE;
@@ -183,7 +189,7 @@ private:
         recv_bytes(fd, recvBuf, KEY_SIZE * KEY_NUM_TCP);
 
         for (int i = 0; i < KEY_NUM_TCP; ++i) {
-            uint64_t k = *((u_int64_t *) (recvBuf + 8 * i));
+            uint64_t k = *((uint64_t *) (recvBuf + 8 * i));
 
             if (k != 0 || (k == 0 && *(recvBuf + i * 8) != 0)) {
                 HashLog::getInstance().put(k, (id << 28) + sum, id);

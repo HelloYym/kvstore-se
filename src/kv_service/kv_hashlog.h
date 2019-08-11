@@ -79,18 +79,18 @@ public:
         }
     }
 
-    void put(u_int64_t &bigEndkey, uint32_t compress_id_pos, u_int32_t id) {
+    void put(uint64_t &bigEndkey, uint32_t compress_id_pos, uint32_t id) {
 //        auto slot = bigEndkey & (HASH_NUM - 1);
 //        std::lock_guard<std::mutex> lock(mutex_[slot]);
 //        kvHash[slot]->put(bigEndkey, compress_id_pos);
         kvHash[id]->put(bigEndkey, compress_id_pos);
     }
 
-    bool find(u_int64_t &bigEndkey, u_int32_t &val, u_int32_t &id) {
+    bool find(uint64_t &bigEndkey, uint32_t &val, uint32_t &id) {
 //        auto slot = bigEndkey & (HASH_NUM - 1);
 //        return kvHash[slot]->get(bigEndkey, val);
         if (!kvHash[id]->get(bigEndkey, val)) {
-            for (u_int32_t i = 0; i < HASH_NUM; i++) {
+            for (uint32_t i = 0; i < HASH_NUM; i++) {
                 if (kvHash[i]->get(bigEndkey, val)) {
                     id = i;
                     return true;

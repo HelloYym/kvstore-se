@@ -33,7 +33,7 @@ public:
         return assigned;
     }
 
-    int put(const long &key, const u_int32_t &value) {
+    int put(const long &key, const uint32_t &value) {
         assert(this->assigned < mask + 1);
         if(key == 0) {
             hasEmptyKey = true;
@@ -59,7 +59,7 @@ public:
 
     };
 
-    bool get(const long & key, u_int32_t &val) {
+    bool get(const long & key, uint32_t &val) {
         if(key == 0) {
             if (hasEmptyKey) {
                 val = values[mask + 1];
@@ -83,7 +83,7 @@ public:
 
 private:
     long *keys;
-    u_int32_t *values;
+    uint32_t *values;
     int keyMixer;
     int assigned;
     int mask;
@@ -93,7 +93,7 @@ private:
         int arraySize = capacity;
         int emptyElementSlot = 1;
         this->keys = static_cast<long *>(malloc((arraySize + emptyElementSlot) * sizeof(long)));
-        this->values = static_cast<u_int32_t *>(malloc((arraySize + emptyElementSlot) * sizeof(u_int32_t)));
+        this->values = static_cast<uint32_t *>(malloc((arraySize + emptyElementSlot) * sizeof(uint32_t)));
         this->mask = arraySize - 1;
 
     }

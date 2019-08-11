@@ -20,7 +20,7 @@ private:
     size_t valueFileSize;
     //key文件 mmap
     int mapKeyFd;
-    u_int64_t *keyBuffer;
+    uint64_t *keyBuffer;
     size_t keyFileSize;
 
 
@@ -34,20 +34,20 @@ public:
 
         //valuelog可以用dio或者缓存io
         if (dio) {
-            this->valueFd = open(fp.str().data(), O_CREAT | O_RDWR | O_DIRECT | O_NOATIME, 0777);
+            this->valueFd = open64(fp.str().data(), O_CREAT | O_RDWR | O_DIRECT | O_NOATIME, 0777);
         } else {
-            this->valueFd = open(fp.str().data(), O_CREAT | O_RDWR | O_NOATIME, 0777);
+            this->valueFd = open64(fp.str().data(), O_CREAT | O_RDWR | O_NOATIME, 0777);
         }
-        fallocate(this->valueFd, 0, 0, valueFileSize);
-        ftruncate(this->valueFd, valueFileSize);
+        fallocate64(this->valueFd, 0, 0, valueFileSize);
+//        ftruncate(this->valueFd, valueFileSize);
 
         //key文件
         std::ostringstream mpKey;
         mpKey << path << "/mpKey-" << id;
         this->mapKeyFd = open(mpKey.str().data(), O_CREAT | O_RDWR | O_DIRECT | O_NOATIME, 0777);
         fallocate(this->mapKeyFd, 0, 0, keyFileSize);
-        ftruncate(this->mapKeyFd, keyFileSize);
-        this->keyBuffer = static_cast<u_int64_t *>(mmap(nullptr, keyFileSize, PROT_READ | PROT_WRITE,
+//        ftruncate(this->mapKeyFd, keyFileSize);
+        this->keyBuffer = static_cast<uint64_t *>(mmap(nullptr, keyFileSize, PROT_READ | PROT_WRITE,
                                                         MAP_SHARED | MAP_POPULATE | MAP_NONBLOCK, this->mapKeyFd,
                                                         0));
 
@@ -65,7 +65,7 @@ public:
         return valueFd;
     }
 
-    u_int64_t *getKeyBuffer() const {
+    uint64_t *getKeyBuffer() const {
         return keyBuffer;
     }
 
