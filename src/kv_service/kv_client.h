@@ -122,7 +122,10 @@ public:
             recoverIndex();
         }
         u_int32_t pos;
-        if (!HashLog::getInstance().find(*(u_int64_t *) key.Buf(), pos, id)) return 0;
+        while (!HashLog::getInstance().find(*(u_int64_t *) key.Buf(), pos, id)) {
+            sleep(5);
+            printf("wait to find pos from hash\n");
+        }
 
         if (getTimes == 0) {
             this->start = now();
