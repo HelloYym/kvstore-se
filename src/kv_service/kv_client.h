@@ -43,7 +43,7 @@ public:
 
         printf("Client init start %s, %d\n", host, id);
 
-        this->id = id;
+        this->id = (uint32_t)id;
         nums = 0;
         recoverFlag = false;
         sendBuf = new char[MAX_PACKET_SIZE];
@@ -57,8 +57,6 @@ public:
             printf("socket error\n");
             exit(-1);
         }
-        int on = 1;
-
         server_addr.sin_family = AF_INET;
         server_addr.sin_port = htons(port);
         server_addr.sin_addr.s_addr = inet_addr(host + 6);
@@ -68,8 +66,8 @@ public:
             sleep(1);
         }
 
+        int on = 1;
         setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, (void *) &on, sizeof(on));
-
         // 接收缓冲区
         int nRecvBuf = 1 * 1024 * 1024;//设置为1M
         setsockopt(fd, SOL_SOCKET, SO_RCVBUF, (const char *) &nRecvBuf, sizeof(int));
@@ -90,9 +88,7 @@ public:
         printf("start recover index: %d.\n", id);
         reset();
         while (getKey(nums)) {
-//                nums ++;
         }
-
         printf("recover threadId %d. time spent is %lims\n", id, (now() - start).count());
         printf("======key num: %d\n", nums);
         recover(nums);
@@ -126,7 +122,7 @@ public:
             recoverIndex();
         }
         uint32_t pos;
-        while (!HashLog::getInstance().find(*(uint64_t *) key.Buf(), pos, id)) {
+        while (!HashLog::getInstance().find(*((uint64_t *) key.Buf()), pos, id)) {
             sleep(5);
             printf("wait to find pos from hash\n");
         }
@@ -147,24 +143,17 @@ public:
 private:
 
     uint32_t id;
-
     bool recoverFlag;
-
     char *sendBuf;
     char *recvBuf;
-
     int fd;
-
     struct sockaddr_in server_addr;
-
     uint32_t nums;
 
     milliseconds now() {
         return duration_cast<milliseconds>(system_clock::now().time_since_epoch());
     }
-
     milliseconds start;
-
     int setTimes, getTimes;
 
     void sendKV(KVString &key, KVString &val) {
@@ -202,11 +191,10 @@ private:
     }
 
     int getValue(uint32_t pos, KVString &val) {
-        auto send_len = sizeof(uint32_t);
         auto &send_pkt = *(Packet *) sendBuf;
-        send_pkt.len = send_len + PACKET_HEADER_SIZE;
+        send_pkt.len = sizeof(uint32_t) + PACKET_HEADER_SIZE;
         send_pkt.type = KV_OP_GET_V;
-        memcpy(send_pkt.buf, (char *) &pos, send_len);
+        memcpy(send_pkt.buf, (char *) &pos, sizeof(uint32_t));
         sendPack(fd, sendBuf);
 
         char *v = new char[VALUE_SIZE];

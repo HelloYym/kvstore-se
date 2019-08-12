@@ -83,15 +83,7 @@ int main(int argc, char * argv[]) {
     int ssfd = TcpServer::start(host, port);
 
     for (int i = 0; i < THREAD_NUM; i++){
-
-//        char url[256];
-//        strcpy(url, host);
-
-//        int port = 9500 + threadId;
-//        strcat(url, ":");
-//        strcat(url, std::to_string(port).c_str());
         int ret = TcpServer::Run(ssfd, rpc_process->GetPtr());
-
     }
 
     pause_a();

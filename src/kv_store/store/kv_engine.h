@@ -61,6 +61,9 @@ public:
         kvLog->preadValue((size_t)offset, val);
     }
 
+    void getVZeroCopy(int sfd, int offset) {
+        kvLog->preadValueZeroCopy(sfd, (off_t) offset);
+    }
 
     void resetKeyPosition() {
         kvLog->resetKeyPosition();
@@ -77,8 +80,8 @@ public:
 
 private:
     //读缓存
-    std::unique_ptr<char> readBuffer =
-            unique_ptr<char>(static_cast<char *> (memalign((size_t) getpagesize(), VALUE_SIZE * READ_CACHE_SIZE)));
+//    std::unique_ptr<char> readBuffer =
+//            unique_ptr<char>(static_cast<char *> (memalign((size_t) getpagesize(), VALUE_SIZE * READ_CACHE_SIZE)));
     KVFile * kvFile = nullptr;
     KVLog * kvLog = nullptr;
 };

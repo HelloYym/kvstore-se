@@ -24,30 +24,25 @@ TcpServer::~TcpServer() {
     stopAll();
 }
 
-int TcpServer::Run(int ssfd, std::shared_ptr<RpcProcess> rpc_process) {
-//    auto & inst = getInst();
-//    // 启动一个新端口
-//    int ssfd = inst.start(host, port);
-
-    if (ssfd != -1) {
-        // 启动一个线程监听
-        std::thread recv(&TcpServer::processRecv, ssfd, rpc_process);
-        recv.detach();
-    }
-
-    return ssfd;
-}
-
-
 void TcpServer::StopAll() {
     printf("STOP ALL...\n");
     getInst().stopAll();
+}
+
+void TcpServer::stopAll() {
+    std::lock_guard<std::mutex> lock(mutex_);
+    for (auto & fd : fds_) {
+        //        nn_close(fd);
+    }
+    fds_.clear();
 }
 
 TcpServer & TcpServer::getInst() {
     static TcpServer server;
     return server;
 }
+
+
 
 int TcpServer::start(const char * host, int port) {
 
@@ -73,13 +68,15 @@ int TcpServer::start(const char * host, int port) {
     return ssfd;
 }
 
+int TcpServer::Run(int ssfd, std::shared_ptr<RpcProcess> rpc_process) {
 
-void TcpServer::stopAll() {
-    std::lock_guard<std::mutex> lock(mutex_);
-    for (auto & fd : fds_) {
-        //        nn_close(fd);
+    if (ssfd != -1) {
+        // 启动一个线程监听
+        std::thread recv(&TcpServer::processRecv, ssfd, rpc_process);
+        recv.detach();
     }
-    fds_.clear();
+
+    return ssfd;
 }
 
 void TcpServer::processRecv(int ssfd, std::shared_ptr<RpcProcess> process) {
@@ -110,11 +107,6 @@ void TcpServer::processRecv(int ssfd, std::shared_ptr<RpcProcess> process) {
         int nSendBuf= 1 * 1024 * 1024;//设置为1M
         setsockopt(sfd,SOL_SOCKET,SO_SNDBUF,(const char*)&nSendBuf,sizeof(int));
 
-        std::function<void (const char *, int)> cb =
-            [&] (const char * buf, int len) {
-                send(sfd, buf, len, 0);
-            };
-
         char * recv_buf = new char[MAX_PACKET_SIZE];
         char * send_buf = new char[MAX_PACKET_SIZE];
 
@@ -124,7 +116,7 @@ void TcpServer::processRecv(int ssfd, std::shared_ptr<RpcProcess> process) {
                 break;
             }
 
-            process->Insert((Packet *) recv_buf, rc, cb, send_buf);
+            process->Insert(sfd, (Packet *) recv_buf, send_buf);
         }
 
     }

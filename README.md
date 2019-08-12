@@ -10,7 +10,7 @@
 
 ### run - 在build目录执行
 * 启动存储节点:  src/kv_store/kv_store tcp://127.0.0.1 data clear
-* 测试计算节点:  test/tester 10 1 src/kv_service/libkv_service.so  tcp://127.0.0.1
+* 测试计算节点:  test/tester 1024 16 src/kv_service/libkv_service.so  tcp://127.0.0.1
 
 
 ### 其他

@@ -15,7 +15,12 @@
 #include "params.h"
 #include <limits.h>
 #include "kv_string.h"
-
+#include<sys/types.h>
+#include<sys/socket.h>
+#include<netinet/in.h>
+#include <arpa/inet.h>
+#include <netinet/tcp.h>
+#include <sys/sendfile.h>
 class KVLog {
 private:
     //对应ValueFile
@@ -43,13 +48,17 @@ public:
         *(keyBuffer + keyBufferPosition) = *((uint64_t *) key);
         keyBufferPosition++;
 
-        //写入写缓存块
-        pwrite64(this->fd, value, VALUE_SIZE, filePosition);
+        pwrite(this->fd, value, VALUE_SIZE, filePosition);
         filePosition += VALUE_SIZE;
     }
 
     inline void preadValue(size_t pos, char *value) {
-        pread64(this->fd, value, VALUE_SIZE, (pos * VALUE_SIZE));
+        pread(this->fd, value, VALUE_SIZE, (pos * VALUE_SIZE));
+    }
+
+    inline void preadValueZeroCopy(int sfd, off_t offset) {
+        off_t pos = offset * VALUE_SIZE;
+        sendfile(sfd, fd, &pos, VALUE_SIZE);
     }
 
     //再次open时恢复写的位置

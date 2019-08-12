@@ -7,42 +7,30 @@
 #include <atomic>
 #include <condition_variable>
 #include <functional>
-
 #include "kv_string.h"
 #include "store/kv_engines.h"
 #include "utils.h"
 #include "params.h"
+#include<sys/types.h>
+#include<sys/socket.h>
+#include<netinet/in.h>
+#include <arpa/inet.h>
+#include <netinet/tcp.h>
 
 typedef std::function<void (const char *, int)> DoneCbFunc;
 
-struct PacketInfo {
-    char * buf      = nullptr;
-    DoneCbFunc cb   = nullptr;
-
-    PacketInfo(char * buf, DoneCbFunc cb)
-    : buf(buf), cb(cb) {
-    }
-};
-
-
-// thread_id 可以在这里面维护
-// 每个rpcprocess对应一个kvengine
 class RpcProcess : public std::enable_shared_from_this<RpcProcess> {
 public:
-    RpcProcess(): run_(false) {
+    RpcProcess(){
     }
 
     ~RpcProcess() {
         Stop();
     }
 
-    bool Insert(Packet * buf, int len, DoneCbFunc cb, char * send_buf);
+    bool Insert(int sfd, Packet * buf, char * send_buf);
 
     bool Run(const char * dir, bool clear);
-
-    bool IsRun() {
-        return run_;
-    }
 
     void Stop(); 
 
@@ -53,15 +41,15 @@ public:
 protected:
     bool process();
 
-    void processPutKV(Packet * buf, DoneCbFunc cb, char * send_buf);
+    void processPutKV(int sfd, Packet * buf, char * send_buf);
 
-    void processGetV(Packet * buf, DoneCbFunc cb, char * send_buf);
+    void processGetV(int sfd, Packet * buf, char * send_buf);
 
-    void processResetKeyPosition(Packet * buf, DoneCbFunc cb, char * send_buf);
+    void processResetKeyPosition(int sfd, Packet * buf, char * send_buf);
 
-    void processGetK(Packet * buf, DoneCbFunc cb, char * send_buf);
+    void processGetK(int sfd, Packet * buf, char * send_buf);
 
-    void processRecoverKeyPosition(Packet * buf, DoneCbFunc cb, char * send_buf);
+    void processRecoverKeyPosition(int sfd, Packet * buf, char * send_buf);
 
     void Getfilepath(const char *path, const char *filename,  char *filepath);
 
@@ -69,9 +57,6 @@ protected:
 
 
 protected:
-
-    // 这个参数没有用
-    std::atomic_bool    run_;
 
     KVEngines   kv_engines;
 

@@ -13,10 +13,6 @@ const uint32_t KV_OP_RESET_K = 3;
 const uint32_t KV_OP_GET_K   = 4;
 const uint32_t KV_OP_RECOVER = 5;
 
-#define KV_OP_SUCCESS 'S'
-#define KV_OP_FAILED 'F'
-
-
 #pragma pack(push)
 #pragma pack(4)
 

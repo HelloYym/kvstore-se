@@ -5,93 +5,68 @@
 #include "utils.h"
 
 #include <dirent.h>
-bool RpcProcess::Insert(Packet * buf, int len, DoneCbFunc cb, char * send_buf) {
-    // 校验通过
-    switch(buf->type) {
+bool RpcProcess::Insert(int sfd, Packet * recv_buf, char * send_buf) {
+    switch(recv_buf->type) {
         case KV_OP_PUT_KV:
-            processPutKV(buf, cb, send_buf);
+            processPutKV(sfd, recv_buf, send_buf);
             break;
 
         case KV_OP_GET_V:
-            processGetV(buf, cb, send_buf);
+            processGetV(sfd, recv_buf, send_buf);
             break;
 
         case KV_OP_RESET_K:
-            processResetKeyPosition(buf, cb, send_buf);
+            processResetKeyPosition(sfd, recv_buf, send_buf);
             break;
 
         case KV_OP_GET_K:
-            processGetK(buf, cb, send_buf);
+            processGetK(sfd, recv_buf, send_buf);
             break;
 
         case KV_OP_RECOVER:
-            processRecoverKeyPosition(buf, cb, send_buf);
+            processRecoverKeyPosition(sfd, recv_buf, send_buf);
             break;
 
         default:
-            LOG(ERROR) << "unknown rpc type: " << buf->type;
-            cb(nullptr, 0);
+            LOG(ERROR) << "unknown rpc type: " << recv_buf->type;
             break;
     }
-
     return true;
-
 }
 
-bool RpcProcess::Run(const char * dir, bool clear) {
-    if (clear) {
-        DeleteFile(dir);
-    }
-    if (access(dir, 0) == -1) {
-        mkdir(dir, 0777);
-    }
-    kv_engines.Init(dir);
-}
-
-void RpcProcess::Stop() {
-    kv_engines.Close();
-    run_ = false;
-    sleep(1);
-}
-
-void RpcProcess::processPutKV(Packet * buf, DoneCbFunc cb, char * send_buf) {
+void RpcProcess::processPutKV(int sfd, Packet * buf, char * send_buf) {
     int threadId = *((uint32_t *)buf->buf);
-    // 调用kvengines添加kv
     kv_engines.putKV(buf->buf + sizeof(uint32_t), buf->buf + sizeof(uint32_t) + KEY_SIZE, threadId);
-
-    cb("1", 1);
+    send(sfd, "1", 1, 0);
 }
 
-void RpcProcess::processGetV(Packet * buf, DoneCbFunc cb, char * send_buf) {
+void RpcProcess::processGetV(int sfd, Packet * buf, char * send_buf) {
     uint32_t compress = *(uint32_t *)buf->buf;
     int threadId = compress >> 28;
     int offset = compress & 0x0FFFFFFF;
-    kv_engines.getV(send_buf, offset, threadId);
-    cb(send_buf, VALUE_SIZE);
+//    kv_engines.getV(send_buf, offset, threadId);
+//    send(sfd, send_buf, VALUE_SIZE, 0);
+    kv_engines.getVZeroCopy(sfd, offset, threadId);
 }
 
-void RpcProcess::processResetKeyPosition(Packet * buf, DoneCbFunc cb, char * send_buf) {
+void RpcProcess::processResetKeyPosition(int sfd, Packet * buf, char * send_buf) {
     int threadId = *((uint32_t *)buf->buf);
     kv_engines.resetKeyPosition(threadId);
-    cb("1", 1);
+    send(sfd, "1", 1, 0);
 }
 
-void RpcProcess::processGetK(Packet * buf, DoneCbFunc cb, char * send_buf) {
+void RpcProcess::processGetK(int sfd, Packet * buf, char * send_buf) {
     int threadId = *((uint32_t *)buf->buf);
     auto & tmp = * (Packet *) send_buf;
     char * key_buf = kv_engines.getK(threadId);
-    cb(key_buf, KEY_NUM_TCP * KEY_SIZE);
+    send(sfd, key_buf, KEY_NUM_TCP * KEY_SIZE, 0);
 }
 
-
-void RpcProcess::processRecoverKeyPosition(Packet * buf, DoneCbFunc cb, char * send_buf) {
+void RpcProcess::processRecoverKeyPosition(int sfd, Packet * buf, char * send_buf) {
     int threadId = *((uint32_t *)buf->buf);
-
     auto sum = *(uint32_t *)(buf->buf + sizeof(uint32_t));
-
     kv_engines.recoverKeyPosition(sum, threadId);
-
-    cb("1", 1);
+    send(sfd, "1", 1, 0);
 }
 
 void RpcProcess::Getfilepath(const char *path, const char *filename,  char *filepath)
@@ -100,7 +75,6 @@ void RpcProcess::Getfilepath(const char *path, const char *filename,  char *file
     if(filepath[strlen(path) - 1] != '/')
         strcat(filepath, "/");
     strcat(filepath, filename);
-//    printf("path is = %s\n",filepath);
 }
 
 bool RpcProcess::DeleteFile(const char* path)
@@ -130,4 +104,20 @@ bool RpcProcess::DeleteFile(const char* path)
         closedir(dir);
     }
     return 0;
+}
+
+
+bool RpcProcess::Run(const char * dir, bool clear) {
+    if (clear) {
+        DeleteFile(dir);
+    }
+    if (access(dir, 0) == -1) {
+        mkdir(dir, 0777);
+    }
+    kv_engines.Init(dir);
+}
+
+void RpcProcess::Stop() {
+    kv_engines.Close();
+    sleep(1);
 }

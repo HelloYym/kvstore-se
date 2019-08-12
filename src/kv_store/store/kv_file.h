@@ -34,11 +34,11 @@ public:
 
         //valuelog可以用dio或者缓存io
         if (dio) {
-            this->valueFd = open64(fp.str().data(), O_CREAT | O_RDWR | O_DIRECT | O_NOATIME, 0777);
+            this->valueFd = open(fp.str().data(), O_CREAT | O_RDWR | O_DIRECT | O_NOATIME, 0777);
         } else {
-            this->valueFd = open64(fp.str().data(), O_CREAT | O_RDWR | O_NOATIME, 0777);
+            this->valueFd = open(fp.str().data(), O_CREAT | O_RDWR | O_NOATIME, 0777);
         }
-        fallocate64(this->valueFd, 0, 0, valueFileSize);
+        fallocate(this->valueFd, 0, 0, valueFileSize);
 //        ftruncate(this->valueFd, valueFileSize);
 
         //key文件

@@ -21,7 +21,6 @@ private:
     KVHash ** kvHash = nullptr;
     int client_ref;
     int hash_finsh;
-    std::mutex mutex_[HASH_NUM];
     std::mutex mutex1;
     std::condition_variable cond;
 
