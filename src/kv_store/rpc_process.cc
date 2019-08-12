@@ -26,7 +26,9 @@ bool RpcProcess::Insert(int sfd, Packet * recv_buf, char * send_buf) {
         case KV_OP_RECOVER:
             processRecoverKeyPosition(sfd, recv_buf, send_buf);
             break;
-
+        case KV_OP_GETBATCH_V:
+            processGetBatchV(sfd, recv_buf, send_buf);
+            break;
         default:
             LOG(ERROR) << "unknown rpc type: " << recv_buf->type;
             break;
@@ -47,6 +49,16 @@ void RpcProcess::processGetV(int sfd, Packet * buf, char * send_buf) {
 //    kv_engines.getV(send_buf, offset, threadId);
 //    send(sfd, send_buf, VALUE_SIZE, 0);
     kv_engines.getVZeroCopy(sfd, offset, threadId);
+}
+
+void RpcProcess::processGetBatchV(int sfd, Packet * buf, char * send_buf) {
+    uint32_t compress = *(uint32_t *)buf->buf;
+    int threadId = compress >> 28;
+    int offset = compress & 0x0FFFFFFF;
+//    kv_engines.getV(send_buf, offset, threadId);
+//    send(sfd, send_buf, VALUE_SIZE, 0);
+    offset = offset / (uint32_t)SEQREAD_CACHE_NUM * (uint32_t)SEQREAD_CACHE_NUM;
+    kv_engines.getVBatchZeroCopy(sfd, offset, threadId);
 }
 
 void RpcProcess::processResetKeyPosition(int sfd, Packet * buf, char * send_buf) {

@@ -12,6 +12,7 @@ const uint32_t KV_OP_GET_V   = 2;
 const uint32_t KV_OP_RESET_K = 3;
 const uint32_t KV_OP_GET_K   = 4;
 const uint32_t KV_OP_RECOVER = 5;
+const uint32_t KV_OP_GETBATCH_V  = 6;
 
 #pragma pack(push)
 #pragma pack(4)

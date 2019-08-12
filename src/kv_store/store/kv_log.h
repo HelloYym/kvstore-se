@@ -61,6 +61,10 @@ public:
         sendfile(sfd, fd, &pos, VALUE_SIZE);
     }
 
+    inline void preadValueBatchZeroCopy(int sfd, off_t offset) {
+        off_t pos = offset * VALUE_SIZE;
+        sendfile(sfd, fd, &pos, SEQREAD_CACHE_SIZE);
+    }
     //再次open时恢复写的位置
     void recover(size_t sum) {
         this->keyBufferPosition = sum;

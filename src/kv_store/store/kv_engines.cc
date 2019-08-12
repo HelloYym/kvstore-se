@@ -30,6 +30,10 @@ void KVEngines::getVZeroCopy(int sfd, int offset, int threadId) {
     engine[threadId].getVZeroCopy(sfd, offset);
 }
 
+void KVEngines::getVBatchZeroCopy(int sfd, int offset, int threadId) {
+    engine[threadId].getVBatchZeroCopy(sfd, offset);
+}
+
 char * KVEngines::getK(int threadId) {
     return engine[threadId].getK();
 }

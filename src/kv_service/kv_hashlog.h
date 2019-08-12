@@ -39,6 +39,8 @@ private:
 
 public:
 
+    bool isInStep1;//判断是否在校验阶段
+
     void init() {
         this->kvHash = (KVHash **) malloc(HASH_NUM * sizeof(HashLog *));
         for (int i = 0; i < HASH_NUM; i++) {
@@ -54,6 +56,14 @@ public:
         }
         client_ref += 1;
         hash_finsh += 1;
+
+        if (client_ref == THREAD_NUM) {
+            isInStep1 = true;
+            if (client_ref > 10) {
+                isInStep1 = false;
+            }
+        }
+
     }
 
 

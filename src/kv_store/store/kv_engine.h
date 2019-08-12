@@ -65,6 +65,10 @@ public:
         kvLog->preadValueZeroCopy(sfd, (off_t) offset);
     }
 
+    void getVBatchZeroCopy(int sfd, int offset) {
+        kvLog->preadValueBatchZeroCopy(sfd, (off_t) offset);
+    }
+
     void resetKeyPosition() {
         kvLog->resetKeyPosition();
     }
