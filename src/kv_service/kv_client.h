@@ -68,15 +68,13 @@ public:
             sleep(1);
         }
 
-        if (setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, (void *) &on, sizeof(on)) == 0) {
-            printf("TCP_NODELAY\n");
-        }
+        setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, (void *) &on, sizeof(on));
 
         // 接收缓冲区
-        int nRecvBuf = 32 * 1024;//设置为32K
+        int nRecvBuf = 1 * 1024 * 1024;//设置为1M
         setsockopt(fd, SOL_SOCKET, SO_RCVBUF, (const char *) &nRecvBuf, sizeof(int));
         //发送缓冲区
-        int nSendBuf = 32*1024;//设置为32K
+        int nSendBuf = 1 * 1024 * 1024;//设置为1M
         setsockopt(fd, SOL_SOCKET, SO_SNDBUF, (const char *) &nSendBuf, sizeof(int));
 
         KV_LOG(INFO) << "connect to store node success. fd: " << fd;
@@ -170,9 +168,8 @@ private:
     int setTimes, getTimes;
 
     void sendKV(KVString &key, KVString &val) {
-        auto send_len = KEY_SIZE + VALUE_SIZE + PACKET_HEADER_SIZE + sizeof(uint32_t);
         auto &send_pkt = *(Packet *) sendBuf;
-        send_pkt.len = send_len;
+        send_pkt.len = PACKET_HEADER_SIZE + sizeof(uint32_t)+ KEY_SIZE + VALUE_SIZE;
         send_pkt.type = KV_OP_PUT_KV;
         memcpy(send_pkt.buf, (char *) &id, sizeof(uint32_t));
         memcpy(send_pkt.buf + sizeof(uint32_t), key.Buf(), KEY_SIZE);
@@ -230,12 +227,10 @@ private:
 
     void recover(int sum) {
         auto &send_pkt = *(Packet *) sendBuf;
-
-        auto send_len = sizeof(uint32_t);
-        send_pkt.len = send_len + PACKET_HEADER_SIZE + sizeof(uint32_t);
+        send_pkt.len = PACKET_HEADER_SIZE + 2 * sizeof(uint32_t);
         send_pkt.type = KV_OP_RECOVER;
         memcpy(send_pkt.buf, (char *) &id, sizeof(uint32_t));
-        memcpy(send_pkt.buf + sizeof(uint32_t), (char *) &sum, send_len);
+        memcpy(send_pkt.buf + sizeof(uint32_t), (char *) &sum, sizeof(uint32_t));
         sendPack(fd, sendBuf);
         recv_bytes(fd, recvBuf, 1);
 

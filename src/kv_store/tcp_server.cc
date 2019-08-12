@@ -42,7 +42,6 @@ int TcpServer::Run(int ssfd, std::shared_ptr<RpcProcess> rpc_process) {
 void TcpServer::StopAll() {
     printf("STOP ALL...\n");
     getInst().stopAll();
-    //    sleep(1);
 }
 
 TcpServer & TcpServer::getInst() {
@@ -51,18 +50,6 @@ TcpServer & TcpServer::getInst() {
 }
 
 int TcpServer::start(const char * host, int port) {
-    // 每次调用start启动一个端口
-    //    int fd = nn_socket(AF_SP, NN_REP);
-    //    if (fd < 0) {
-    //        NN_LOG(ERROR, "nn_socket");
-    //        return -1;
-    //    }
-    //
-    //    if (nn_bind(fd, url) < 0) {
-    //        NN_LOG(ERROR, "nn_bind with fd: " << fd);
-    //        nn_close(fd);
-    //        return -1;
-    //    }
 
     struct sockaddr_in servaddr;
     int ssfd;
@@ -114,29 +101,14 @@ void TcpServer::processRecv(int ssfd, std::shared_ptr<RpcProcess> process) {
         }
         
         int on = 1;
-        if (setsockopt(sfd, IPPROTO_TCP, TCP_NODELAY, (void *)&on, sizeof(on)) == 0)
-        {
-//            printf("TCP_NODELAY\n");
-        }
+        setsockopt(sfd, IPPROTO_TCP, TCP_NODELAY, (void *)&on, sizeof(on));
 
         // 接收缓冲区
-        int nRecvBuf=32*1024;//设置为32K
+        int nRecvBuf= 1 * 1024 * 1024;//设置为1M
         setsockopt(sfd,SOL_SOCKET,SO_RCVBUF,(const char*)&nRecvBuf,sizeof(int));
         //发送缓冲区
-        int nSendBuf=32*1024;//设置为32K
+        int nSendBuf= 1 * 1024 * 1024;//设置为1M
         setsockopt(sfd,SOL_SOCKET,SO_SNDBUF,(const char*)&nSendBuf,sizeof(int));
-
-        // bool bSet = true;
-        // setsockopt(sfd,SOL_SOCKET,SO_KEEPALIVE,(void*)&bSet,sizeof(bSet));
-
-        // int keepIdle = 1000;
-        // int keepInterval = 5;
-        // int keepCount = 3;
-        //
-        // setsockopt(sfd, SOL_TCP, TCP_KEEPIDLE, (void *)&keepIdle, sizeof(keepIdle));
-        // setsockopt(sfd, SOL_TCP,TCP_KEEPINTVL, (void *)&keepInterval, sizeof(keepInterval));
-        // setsockopt(sfd,SOL_TCP, TCP_KEEPCNT, (void *)&keepCount, sizeof(keepCount));
-        //
 
         std::function<void (const char *, int)> cb =
             [&] (const char * buf, int len) {
@@ -148,7 +120,6 @@ void TcpServer::processRecv(int ssfd, std::shared_ptr<RpcProcess> process) {
 
         while (1) {
             int rc = recvPack(sfd, recv_buf);
-            //        printf("FD : %d, RECV: %d, %d\n",sfd, ((Packet *) recv_buf)->type, ((Packet *) recv_buf)->len);
             if (rc < 0) {
                 break;
             }
