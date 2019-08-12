@@ -52,17 +52,15 @@ public:
 
     // TODO: 多线程同时读一个文件 readbuf冲突
     void getV(char * val, int offset) {
-//        char * buffer = readBuffer.get();
-//        int indexInReadBuffer = kvLog->readValue(offset, buffer);
-        
-//        char * buf_ = new char[VALUE_SIZE];
-//        memcpy(val, buffer + indexInReadBuffer * VALUE_SIZE, VALUE_SIZE);
-//        val.Reset(buf_, VALUE_SIZE);
         kvLog->preadValue((size_t)offset, val);
     }
 
     void getVZeroCopy(int sfd, int offset) {
         kvLog->preadValueZeroCopy(sfd, (off_t) offset);
+    }
+
+    void getVBatch(char * val, int offset) {
+        kvLog->preadValueBatch((size_t)offset, val);
     }
 
     void getVBatchZeroCopy(int sfd, int offset) {

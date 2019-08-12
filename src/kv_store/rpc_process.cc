@@ -46,8 +46,12 @@ void RpcProcess::processGetV(int sfd, Packet * buf, char * send_buf) {
     uint32_t compress = *(uint32_t *)buf->buf;
     int threadId = compress >> 28;
     int offset = compress & 0x0FFFFFFF;
+    
+    //方式1：pread出来
 //    kv_engines.getV(send_buf, offset, threadId);
 //    send(sfd, send_buf, VALUE_SIZE, 0);
+
+    //方式2：sendfile零拷贝
     kv_engines.getVZeroCopy(sfd, offset, threadId);
 }
 
@@ -55,9 +59,13 @@ void RpcProcess::processGetBatchV(int sfd, Packet * buf, char * send_buf) {
     uint32_t compress = *(uint32_t *)buf->buf;
     int threadId = compress >> 28;
     int offset = compress & 0x0FFFFFFF;
-//    kv_engines.getV(send_buf, offset, threadId);
-//    send(sfd, send_buf, VALUE_SIZE, 0);
     offset = offset / (uint32_t)SEQREAD_CACHE_NUM * (uint32_t)SEQREAD_CACHE_NUM;
+
+    //方式1：pread出来
+//    kv_engines.getVBatch(send_buf, offset, threadId);
+//    send(sfd, send_buf, SEQREAD_CACHE_SIZE, 0);
+    
+    //方式2：sendfile零拷贝
     kv_engines.getVBatchZeroCopy(sfd, offset, threadId);
 }
 

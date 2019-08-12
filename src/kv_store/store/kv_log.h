@@ -61,6 +61,10 @@ public:
         sendfile(sfd, fd, &pos, VALUE_SIZE);
     }
 
+    inline void preadValueBatch(size_t pos, char *value) {
+        pread(this->fd, value, SEQREAD_CACHE_SIZE, (pos * VALUE_SIZE));
+    }
+
     inline void preadValueBatchZeroCopy(int sfd, off_t offset) {
         off_t pos = offset * VALUE_SIZE;
         sendfile(sfd, fd, &pos, SEQREAD_CACHE_SIZE);
