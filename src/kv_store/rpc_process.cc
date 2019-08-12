@@ -5,11 +5,11 @@
 #include "utils.h"
 
 #include <dirent.h>
-bool RpcProcess::Insert(int& threadId, Packet * buf, int len, DoneCbFunc cb, char * send_buf) {
+bool RpcProcess::Insert(Packet * buf, int len, DoneCbFunc cb, char * send_buf) {
     // 校验通过
     switch(buf->type) {
         case KV_OP_PUT_KV:
-            processPutKV(threadId, buf, cb, send_buf);
+            processPutKV(buf, cb, send_buf);
             break;
 
         case KV_OP_GET_V:
@@ -17,15 +17,15 @@ bool RpcProcess::Insert(int& threadId, Packet * buf, int len, DoneCbFunc cb, cha
             break;
 
         case KV_OP_RESET_K:
-            processResetKeyPosition(threadId, buf, cb, send_buf);
+            processResetKeyPosition(buf, cb, send_buf);
             break;
 
         case KV_OP_GET_K:
-            processGetK(threadId, buf, cb, send_buf);
+            processGetK(buf, cb, send_buf);
             break;
 
         case KV_OP_RECOVER:
-            processRecoverKeyPosition(threadId, buf, cb, send_buf);
+            processRecoverKeyPosition(buf, cb, send_buf);
             break;
 
         default:
@@ -54,9 +54,10 @@ void RpcProcess::Stop() {
     sleep(1);
 }
 
-void RpcProcess::processPutKV(int& threadId, Packet * buf, DoneCbFunc cb, char * send_buf) {
+void RpcProcess::processPutKV(Packet * buf, DoneCbFunc cb, char * send_buf) {
+    int threadId = *((uint32_t *)buf->buf);
     // 调用kvengines添加kv
-    kv_engines.putKV(buf->buf, buf->buf + KEY_SIZE, threadId);
+    kv_engines.putKV(buf->buf + sizeof(uint32_t), buf->buf + sizeof(uint32_t) + KEY_SIZE, threadId);
 
     cb("1", 1);
 }
@@ -69,22 +70,24 @@ void RpcProcess::processGetV(Packet * buf, DoneCbFunc cb, char * send_buf) {
     cb(send_buf, VALUE_SIZE);
 }
 
-void RpcProcess::processResetKeyPosition(int& threadId, Packet * buf, DoneCbFunc cb, char * send_buf) {
+void RpcProcess::processResetKeyPosition(Packet * buf, DoneCbFunc cb, char * send_buf) {
+    int threadId = *((uint32_t *)buf->buf);
     kv_engines.resetKeyPosition(threadId);
     cb("1", 1);
 }
 
-void RpcProcess::processGetK(int& threadId, Packet * buf, DoneCbFunc cb, char * send_buf) {
-
+void RpcProcess::processGetK(Packet * buf, DoneCbFunc cb, char * send_buf) {
+    int threadId = *((uint32_t *)buf->buf);
     auto & tmp = * (Packet *) send_buf;
     char * key_buf = kv_engines.getK(threadId);
     cb(key_buf, KEY_NUM_TCP * KEY_SIZE);
 }
 
 
-void RpcProcess::processRecoverKeyPosition(int& threadId, Packet * buf, DoneCbFunc cb, char * send_buf) {
+void RpcProcess::processRecoverKeyPosition(Packet * buf, DoneCbFunc cb, char * send_buf) {
+    int threadId = *((uint32_t *)buf->buf);
 
-    auto sum = *(uint32_t *)buf->buf;
+    auto sum = *(uint32_t *)(buf->buf + sizeof(uint32_t));
 
     kv_engines.recoverKeyPosition(sum, threadId);
 

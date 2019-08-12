@@ -52,7 +52,7 @@ public:
         getTimes = 0;
 
         // connect to storage
-        auto port = 9500 + id;
+        auto port = 9500;
         if ((fd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
             printf("socket error\n");
             exit(-1);
@@ -170,20 +170,22 @@ private:
     int setTimes, getTimes;
 
     void sendKV(KVString &key, KVString &val) {
-        auto send_len = KEY_SIZE + VALUE_SIZE + PACKET_HEADER_SIZE;
+        auto send_len = KEY_SIZE + VALUE_SIZE + PACKET_HEADER_SIZE + sizeof(uint32_t);
         auto &send_pkt = *(Packet *) sendBuf;
         send_pkt.len = send_len;
         send_pkt.type = KV_OP_PUT_KV;
-        memcpy(send_pkt.buf, key.Buf(), KEY_SIZE);
-        memcpy(send_pkt.buf + KEY_SIZE, val.Buf(), VALUE_SIZE);
+        memcpy(send_pkt.buf, (char *) &id, sizeof(uint32_t));
+        memcpy(send_pkt.buf + sizeof(uint32_t), key.Buf(), KEY_SIZE);
+        memcpy(send_pkt.buf + KEY_SIZE + sizeof(uint32_t), val.Buf(), VALUE_SIZE);
         sendPack(fd, sendBuf);
         recv_bytes(fd, recvBuf, 1);
     }
 
     bool getKey(uint32_t &sum) {
         auto &send_pkt = *(Packet *) sendBuf;
-        send_pkt.len = PACKET_HEADER_SIZE;
+        send_pkt.len = PACKET_HEADER_SIZE + sizeof(uint32_t);
         send_pkt.type = KV_OP_GET_K;
+        memcpy(send_pkt.buf, (char *) &id, sizeof(uint32_t));
         sendPack(fd, sendBuf);
 
         recv_bytes(fd, recvBuf, KEY_SIZE * KEY_NUM_TCP);
@@ -219,8 +221,9 @@ private:
 
     void reset() {
         auto &send_pkt = *(Packet *) sendBuf;
-        send_pkt.len = PACKET_HEADER_SIZE;
+        send_pkt.len = PACKET_HEADER_SIZE + sizeof(uint32_t);
         send_pkt.type = KV_OP_RESET_K;
+        memcpy(send_pkt.buf, (char *) &id, sizeof(uint32_t));
         sendPack(fd, sendBuf);
         recv_bytes(fd, recvBuf, 1);
     }
@@ -229,9 +232,10 @@ private:
         auto &send_pkt = *(Packet *) sendBuf;
 
         auto send_len = sizeof(uint32_t);
-        send_pkt.len = send_len + PACKET_HEADER_SIZE;
+        send_pkt.len = send_len + PACKET_HEADER_SIZE + sizeof(uint32_t);
         send_pkt.type = KV_OP_RECOVER;
-        memcpy(send_pkt.buf, (char *) &sum, send_len);
+        memcpy(send_pkt.buf, (char *) &id, sizeof(uint32_t));
+        memcpy(send_pkt.buf + sizeof(uint32_t), (char *) &sum, send_len);
         sendPack(fd, sendBuf);
         recv_bytes(fd, recvBuf, 1);
 

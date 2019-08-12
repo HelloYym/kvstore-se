@@ -18,7 +18,7 @@ const uint32_t KV_OP_RECOVER = 5;
 
 
 #pragma pack(push)
-#pragma pack(8)
+#pragma pack(4)
 
 struct Packet {
     uint32_t len = 0;

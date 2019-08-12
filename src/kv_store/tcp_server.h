@@ -12,20 +12,21 @@ public:
     TcpServer();
     ~TcpServer();
 
-    static int Run(const char * host, int port, int threadId, std::shared_ptr<RpcProcess> process);
+    static int Run(int port, std::shared_ptr<RpcProcess> process);
 
     static void StopAll();
+
+    static int start(const char * host, int port);
+
 protected:
 
     static TcpServer & getInst();
-
-    int start(const char * host, int port);
 
     void stopAll();
 
     static int recvPack(int fd, char * buf);
 
-    static void processRecv(int sfd, int threadId, std::shared_ptr<RpcProcess> process);
+    static void processRecv(int sfd, std::shared_ptr<RpcProcess> process);
 
 protected:
     std::mutex mutex_;

@@ -24,14 +24,14 @@ TcpServer::~TcpServer() {
     stopAll();
 }
 
-int TcpServer::Run(const char * host, int port, int threadId, std::shared_ptr<RpcProcess> rpc_process) {
-    auto & inst = getInst();
-    // 启动一个新端口
-    int ssfd = inst.start(host, port);
+int TcpServer::Run(int ssfd, std::shared_ptr<RpcProcess> rpc_process) {
+//    auto & inst = getInst();
+//    // 启动一个新端口
+//    int ssfd = inst.start(host, port);
 
     if (ssfd != -1) {
-        // 启动一个线程监听新端口
-        std::thread recv(&TcpServer::processRecv, ssfd, threadId, rpc_process);
+        // 启动一个线程监听
+        std::thread recv(&TcpServer::processRecv, ssfd, rpc_process);
         recv.detach();
     }
 
@@ -79,7 +79,7 @@ int TcpServer::start(const char * host, int port) {
     if(bind(ssfd, (struct sockaddr*)&servaddr, sizeof(servaddr)) == -1){
         printf("bind socket error\n");
     }
-    if(listen(ssfd, 10) == -1){
+    if(listen(ssfd, 100) == -1){
         printf("listen socket error\n");
     }
 
@@ -95,7 +95,7 @@ void TcpServer::stopAll() {
     fds_.clear();
 }
 
-void TcpServer::processRecv(int ssfd, int threadId, std::shared_ptr<RpcProcess> process) {
+void TcpServer::processRecv(int ssfd, std::shared_ptr<RpcProcess> process) {
     if (ssfd == -1 || process == nullptr) {
         return ;
     }
@@ -153,7 +153,7 @@ void TcpServer::processRecv(int ssfd, int threadId, std::shared_ptr<RpcProcess> 
                 break;
             }
 
-            process->Insert(threadId, (Packet *) recv_buf, rc, cb, send_buf);
+            process->Insert((Packet *) recv_buf, rc, cb, send_buf);
         }
 
     }

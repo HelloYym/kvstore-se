@@ -79,15 +79,18 @@ int main(int argc, char * argv[]) {
     auto rpc_process= std::make_shared<RpcProcess>();
     rpc_process->Run(dir, clear);
 
-    for (int threadId = 0; threadId < THREAD_NUM; threadId++){
+    int port = 9500;
+    int ssfd = TcpServer::start(host, port);
+
+    for (int i = 0; i < THREAD_NUM; i++){
 
 //        char url[256];
 //        strcpy(url, host);
 
-        int port = 9500 + threadId;
+//        int port = 9500 + threadId;
 //        strcat(url, ":");
 //        strcat(url, std::to_string(port).c_str());
-        int ret = TcpServer::Run(host, port, threadId, rpc_process->GetPtr());
+        int ret = TcpServer::Run(ssfd, rpc_process->GetPtr());
 
     }
 
