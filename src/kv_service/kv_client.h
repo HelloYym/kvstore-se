@@ -115,21 +115,23 @@ public:
             }
             recoverIndex();
         }
-
         //print
         if (setTimes == 0) {
             this->start = now();
         }
 
-        if (setTimes % 1000000 == 0 || setTimes < 10) {
-            printf("ID : %d,  Set : %lu\n", id, *((uint64_t *) key.Buf()));
-            printf("write %d. time spent is %lims\n", setTimes, (now() - start).count());
-        }
-        setTimes++;
 
         sendKV(key, val);
         HashLog::getInstance().put(*((uint64_t *) key.Buf()), (id << 28) + nums, id);
         nums++;
+
+        //print
+        if (setTimes % 100000 == 0 && setTimes > 0) {
+//            printf("ID : %d,  Set : %lu\n", id, *((uint64_t *) key.Buf()));
+            printf("client ID : %d. write %d. total time spent is %lims. average time spent is %lims\n", id, setTimes, (now() - start).count(), (((now() - start).count()) / setTimes));
+        }
+        setTimes++;
+
         return 1;
     }
 
@@ -143,29 +145,35 @@ public:
             }
             recoverIndex();
         }
+
+        //print
+        if (getTimes == 0) {
+            this->start = now();
+        }
+
+
         uint32_t pos;
         while (!HashLog::getInstance().find(*((uint64_t *) key.Buf()), pos, id)) {
             sleep(5);
             printf("wait to find pos from hash\n");
         }
 
+        //ToDo 暂时只做顺序读阶段的批量
+//        if (isInStep2) {
+//            getValueBatch(pos, val);
+//        } else {
+            getValue(pos, val);
+//        }
+
         //print
-        if (getTimes == 0) {
-            this->start = now();
-        }
-        if (getTimes % 1000000 == 0 || getTimes < 10) {
-            printf("ID : %d,  Get : %lu,  threadId : %d, pos : %d\n",
-                   id, *((uint64_t *) key.Buf()), pos >> 28, pos & 0x0FFFFFFF);
-            printf("read %d. time spent is %lims\n", getTimes, (now() - start).count());
+        if (getTimes % 100000 == 0 && getTimes > 0) {
+//            printf("ID : %d,  Get : %lu,  threadId : %d, pos : %d\n",
+//                   id, *((uint64_t *) key.Buf()), pos >> 28, pos & 0x0FFFFFFF);
+            printf("client ID : %d. read %d. total time spent is %lims. average time spent is %lims\n", id, getTimes, (now() - start).count(), (((now() - start).count()) / getTimes));
         }
         getTimes++;
 
-        //ToDo 暂时只做顺序读阶段的批量
-        if (isInStep2) {
-            getValueBatch(pos, val);
-        } else {
-            return getValue(pos, val);
-        }
+        return 1;
     }
 
 private:

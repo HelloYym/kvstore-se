@@ -22,7 +22,7 @@
 #include "params.h"
 
 using namespace std;
-
+using namespace std::chrono;
 
 class KVEngine {
 public:
@@ -42,17 +42,41 @@ public:
         string filePath = ss.str();
         kvFile = new KVFile(path, id, false, VALUE_LOG_SIZE, KEY_LOG_SIZE);
         kvLog = new KVLog(kvFile->getValueFd(), kvFile->getKeyBuffer());
+
+        setTimes = 0;
+        getTimes = 0;
+        sTime = 0;
+        gTime = 0;
+
         return true;
     }
 
     void putKV(char * key, char * val) {
+
+        this->start = now();
+
         kvLog->putValueKey(val, key);
+
+        sTime += (now() - start).count();
+        if (setTimes % 100000 == 0 && setTimes > 0) {
+            printf("store write %d. store total time spent is %lims. store average time spent is %lims\n", setTimes, sTime, sTime / setTimes);
+        }
+        setTimes++;
     }
 
 
     // TODO: 多线程同时读一个文件 readbuf冲突
     void getV(char * val, int offset) {
+
+        this->start = now();
+
         kvLog->preadValue((size_t)offset, val);
+
+        gTime += (now() - start).count();
+        if (getTimes % 100000 == 0 && getTimes > 0) {
+            printf("store read %d. store total time spent is %lims. store average time spent is %lims\n", getTimes, gTime, gTime / getTimes);
+        }
+        getTimes++;
     }
 
     void getVZeroCopy(int sfd, int offset) {
@@ -86,5 +110,13 @@ private:
 //            unique_ptr<char>(static_cast<char *> (memalign((size_t) getpagesize(), VALUE_SIZE * READ_CACHE_SIZE)));
     KVFile * kvFile = nullptr;
     KVLog * kvLog = nullptr;
+
+    milliseconds now() {
+        return duration_cast<milliseconds>(system_clock::now().time_since_epoch());
+    }
+    milliseconds start;
+    int setTimes, getTimes;
+    long sTime, gTime;
+
 };
 #endif
