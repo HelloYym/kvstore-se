@@ -73,7 +73,7 @@ public:
 
     // TODO: 第三阶段随机读
     void getVRandom(char * val, int offset) {
-        kvLog->preadValueRandom((size_t)offset, val, readBufferRandom.get());
+        kvLog->preadValueRandom((size_t)offset, val);
     }
 
     void resetKeyPosition() {
@@ -93,8 +93,6 @@ private:
     //读缓存
     std::unique_ptr<char> readBuffer =
             unique_ptr<char>(static_cast<char *> (memalign((size_t) getpagesize(), VALUE_SIZE * READ_CACHE_SIZE)));
-    std::unique_ptr<char> readBufferRandom =
-            unique_ptr<char>(static_cast<char *> (memalign((size_t) getpagesize(), VALUE_SIZE)));
 
     KVFile * kvFile = nullptr;
     KVLog * kvLog = nullptr;

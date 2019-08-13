@@ -108,7 +108,7 @@ void TcpServer::processRecv(int ssfd, std::shared_ptr<RpcProcess> process) {
         setsockopt(sfd,SOL_SOCKET,SO_SNDBUF,(const char*)&nSendBuf,sizeof(int));
 
         char * recv_buf = new char[MAX_PACKET_SIZE];
-        char * send_buf = new char[MAX_PACKET_SIZE];
+        char * send_buf = static_cast<char *> (memalign((size_t) getpagesize(), MAX_PACKET_SIZE));
 
         while (1) {
             int rc = recvPack(sfd, recv_buf);
