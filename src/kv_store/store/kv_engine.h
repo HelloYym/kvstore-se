@@ -40,55 +40,40 @@ public:
         std::ostringstream ss;
         ss << path << "/value-" << id;
         string filePath = ss.str();
-        kvFile = new KVFile(path, id, false, VALUE_LOG_SIZE, KEY_LOG_SIZE);
-        kvLog = new KVLog(kvFile->getValueFd(), kvFile->getKeyBuffer());
-
-        setTimes = 0;
-        getTimes = 0;
-        sTime = 0;
-        gTime = 0;
-
+        kvFile = new KVFile(path, id, true, VALUE_LOG_SIZE, KEY_LOG_SIZE, BLOCK_SIZE);
+        kvLog = new KVLog(kvFile->getValueFd(), kvFile->getBlockBuffer(), kvFile->getKeyBuffer());
         return true;
     }
 
     void putKV(char * key, char * val) {
 
-        this->start = now();
+//        this->start = now();
 
         kvLog->putValueKey(val, key);
 
-        sTime += (now() - start).count();
-        if (setTimes % 100000 == 0 && setTimes > 0) {
-            printf("store write %d. store total time spent is %lims. store average time spent is %lims\n", setTimes, sTime, sTime / setTimes);
-        }
-        setTimes++;
+//        sTime += (now() - start).count();
+//        if (setTimes % 100000 == 0 && setTimes > 0) {
+//            printf("store write %d. store total time spent is %lims. store average time spent is %lims\n", setTimes, sTime, sTime / setTimes);
+//        }
+//        setTimes++;
     }
 
-
-    // TODO: 多线程同时读一个文件 readbuf冲突
     void getV(char * val, int offset) {
 
-        this->start = now();
+//        this->start = now();
 
-        kvLog->preadValue((size_t)offset, val);
+        kvLog->preadValue((size_t)offset, val, readBuffer.get());
 
-        gTime += (now() - start).count();
-        if (getTimes % 100000 == 0 && getTimes > 0) {
-            printf("store read %d. store total time spent is %lims. store average time spent is %lims\n", getTimes, gTime, gTime / getTimes);
-        }
-        getTimes++;
+//        gTime += (now() - start).count();
+//        if (getTimes % 100000 == 0 && getTimes > 0) {
+//            printf("store read %d. store total time spent is %lims. store average time spent is %lims\n", getTimes, gTime, gTime / getTimes);
+//        }
+//        getTimes++;
     }
 
-    void getVZeroCopy(int sfd, int offset) {
-        kvLog->preadValueZeroCopy(sfd, (off_t) offset);
-    }
-
-    void getVBatch(char * val, int offset) {
-        kvLog->preadValueBatch((size_t)offset, val);
-    }
-
-    void getVBatchZeroCopy(int sfd, int offset) {
-        kvLog->preadValueBatchZeroCopy(sfd, (off_t) offset);
+    // TODO: 第三阶段随机读
+    void getVRandom(char * val, int offset) {
+        kvLog->preadValueRandom((size_t)offset, val, readBufferRandom.get());
     }
 
     void resetKeyPosition() {
@@ -106,8 +91,11 @@ public:
 
 private:
     //读缓存
-//    std::unique_ptr<char> readBuffer =
-//            unique_ptr<char>(static_cast<char *> (memalign((size_t) getpagesize(), VALUE_SIZE * READ_CACHE_SIZE)));
+    std::unique_ptr<char> readBuffer =
+            unique_ptr<char>(static_cast<char *> (memalign((size_t) getpagesize(), VALUE_SIZE * READ_CACHE_SIZE)));
+    std::unique_ptr<char> readBufferRandom =
+            unique_ptr<char>(static_cast<char *> (memalign((size_t) getpagesize(), VALUE_SIZE)));
+
     KVFile * kvFile = nullptr;
     KVLog * kvLog = nullptr;
 

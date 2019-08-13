@@ -8,11 +8,12 @@
 #define KV_LOG(level) LOG(level) << "[" << __FUNCTION__ << ":" << __LINE__ << "] "
 
 const uint32_t KV_OP_PUT_KV  = 1;
-const uint32_t KV_OP_GET_V   = 2;
-const uint32_t KV_OP_RESET_K = 3;
-const uint32_t KV_OP_GET_K   = 4;
-const uint32_t KV_OP_RECOVER = 5;
-const uint32_t KV_OP_GETBATCH_V  = 6;
+const uint32_t KV_OP_GET_V_12   = 2;
+const uint32_t KV_OP_GET_V_3  = 3;
+const uint32_t KV_OP_RESET_K = 4;
+const uint32_t KV_OP_GET_K   = 5;
+const uint32_t KV_OP_RECOVER = 6;
+
 
 #pragma pack(push)
 #pragma pack(4)

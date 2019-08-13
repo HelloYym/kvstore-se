@@ -35,7 +35,6 @@ public:
         close(fd);
         delete [] sendBuf;
         delete [] recvBuf;
-        delete [] seqReadBuf;
         HashLog::getInstance().close();
         printf("Client close over %d\n", id);
     }
@@ -55,11 +54,6 @@ public:
         setTimes = 0;
         getTimes = 0;
 
-        //顺序读批量读相关变量
-//        seqReadBuf = static_cast<char *>(memalign((size_t) getpagesize(), SEQREAD_CACHE_SIZE));
-        seqReadBuf = new char[SEQREAD_CACHE_SIZE];
-        seqReadBufStartIndex = INT32_MIN;
-
         // connect to storage
         auto port = 9500;
         if ((fd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
@@ -78,7 +72,7 @@ public:
         int on = 1;
         setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, (void *) &on, sizeof(on));
         // 接收缓冲区
-        int nRecvBuf = 16 * 1024 * 1024;//设置为16M
+        int nRecvBuf = 1 * 1024 * 1024;//设置为16M
         setsockopt(fd, SOL_SOCKET, SO_RCVBUF, (const char *) &nRecvBuf, sizeof(int));
         //发送缓冲区
         int nSendBuf = 1 * 1024 * 1024;//设置为1M
@@ -158,12 +152,12 @@ public:
             printf("wait to find pos from hash\n");
         }
 
-        //ToDo 暂时只做顺序读阶段的批量
-//        if (isInStep2) {
-//            getValueBatch(pos, val);
-//        } else {
-            getValue(pos, val);
-//        }
+        //ToDo
+        if (isInStep3) {
+            getValueRandom(pos, val);//第三阶段采用
+        } else {
+            getValue(pos, val);//第一、二阶段采用
+        }
 
         //print
         if (getTimes % 100000 == 0 && getTimes > 0) {
@@ -188,10 +182,6 @@ private:
     int fd;
     struct sockaddr_in server_addr;
     uint32_t nums;
-
-    //顺序读批量读相关变量
-    char * seqReadBuf;
-    int seqReadBufStartIndex;
 
     milliseconds now() {
         return duration_cast<milliseconds>(system_clock::now().time_since_epoch());
@@ -236,7 +226,7 @@ private:
     int getValue(uint32_t pos, KVString &val) {
         auto &send_pkt = *(Packet *) sendBuf;
         send_pkt.len = sizeof(uint32_t) + PACKET_HEADER_SIZE;
-        send_pkt.type = KV_OP_GET_V;
+        send_pkt.type = KV_OP_GET_V_12;
         memcpy(send_pkt.buf, (char *) &pos, sizeof(uint32_t));
         sendPack(fd, sendBuf);
 
@@ -244,34 +234,23 @@ private:
         recv_bytes(fd, v, VALUE_SIZE);
         val.Reset(v, VALUE_SIZE);
 
-//        recv_bytes(fd, recvBuf, VALUE_SIZE);
-//        val.Reset(recvBuf, VALUE_SIZE);
         return 1;
     }
 
-    int getValueBatch(uint32_t pos, KVString &val) {
-        uint32_t index = pos & 0x0FFFFFFF;
+    int getValueRandom(uint32_t pos, KVString &val) {
+        auto &send_pkt = *(Packet *) sendBuf;
+        send_pkt.len = sizeof(uint32_t) + PACKET_HEADER_SIZE;
+        send_pkt.type = KV_OP_GET_V_3;
+        memcpy(send_pkt.buf, (char *) &pos, sizeof(uint32_t));
+        sendPack(fd, sendBuf);
 
-        uint32_t currentBufNo = index / (uint32_t)SEQREAD_CACHE_NUM;
-
-        //如果缓存块还没读进来，就发情求批量读
-        if (currentBufNo != seqReadBufStartIndex / (uint32_t)SEQREAD_CACHE_NUM) {
-            seqReadBufStartIndex = currentBufNo * (uint32_t)SEQREAD_CACHE_NUM;
-
-            auto &send_pkt = *(Packet *) sendBuf;
-            send_pkt.len = sizeof(uint32_t) + PACKET_HEADER_SIZE;
-            send_pkt.type = KV_OP_GETBATCH_V;
-            memcpy(send_pkt.buf, (char *) &pos, sizeof(uint32_t));
-            sendPack(fd, sendBuf);
-            recv_bytes(fd, seqReadBuf, SEQREAD_CACHE_SIZE);
-        }
-
-        uint32_t value_buf_offset = index % (uint32_t)SEQREAD_CACHE_NUM;
         char *v = new char[VALUE_SIZE];
-        memcpy(v, seqReadBuf + value_buf_offset * VALUE_SIZE, VALUE_SIZE);
+        recv_bytes(fd, v, VALUE_SIZE);
         val.Reset(v, VALUE_SIZE);
-//        val.Reset(seqReadBuf + value_buf_offset * VALUE_SIZE, VALUE_SIZE);
+
+        return 1;
     }
+
 
     void reset() {
         auto &send_pkt = *(Packet *) sendBuf;

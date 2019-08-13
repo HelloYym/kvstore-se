@@ -17,12 +17,14 @@ const size_t HASH_CAPACITY = 2 * NUM_PER_SLOT / HASH_NUM * THREAD_NUM;
 const size_t PAGE_PER_BLOCK = 256;
 //写缓存大小
 const size_t BLOCK_SIZE = PAGE_PER_BLOCK * VALUE_SIZE;
+//读缓存大小（多少块4KB）
+const int READ_CACHE_SIZE = 256 * 10;
 
 const size_t KEY_NUM_TCP = 1024;//一次最多传输KEY的数量
 
 const size_t PACKET_HEADER_SIZE = sizeof(uint32_t) + sizeof(uint32_t);
 const size_t MAX_PACKET_SIZE = PACKET_HEADER_SIZE + KEY_SIZE * KEY_NUM_TCP;
-//读缓存大小（多少块4KB）
-const size_t SEQREAD_CACHE_NUM = 1024;
-const size_t SEQREAD_CACHE_SIZE = SEQREAD_CACHE_NUM * VALUE_SIZE;
+////读缓存大小（多少块4KB）
+//const size_t SEQREAD_CACHE_NUM = 1024;
+//const size_t SEQREAD_CACHE_SIZE = SEQREAD_CACHE_NUM * VALUE_SIZE;
 #endif //PARAMS_H

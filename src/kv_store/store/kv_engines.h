@@ -18,12 +18,7 @@ public:
     //根据线程id 和 offset 获取 value
     void getV(char * val, int offset, int threadId);
 
-    //根据线程id 和 offset 获取 value sendfile
-    void getVZeroCopy(int sfd, int offset, int threadId);
-
-    void getVBatch(char * val, int offset, int threadId);
-    
-    void getVBatchZeroCopy(int sfd, int offset, int threadId);
+    void getVRandom(char * val, int offset, int threadId);
 
     //下面三个函数是重启恢复位置。
     // 先调用第一个函数，再循环调用第二个直到false，最后调用最后一个函数。

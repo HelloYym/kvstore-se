@@ -45,7 +45,7 @@ protected:
 
     void processGetV(int sfd, Packet * buf, char * send_buf);
 
-    void processGetBatchV(int sfd, Packet * buf, char * send_buf);
+    void processGetVRandom(int sfd, Packet * buf, char * send_buf);
 
     void processResetKeyPosition(int sfd, Packet * buf, char * send_buf);
 

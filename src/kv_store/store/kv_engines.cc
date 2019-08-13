@@ -26,16 +26,8 @@ void KVEngines::getV(char * val, int offset, int threadId) {
     engine[threadId].getV(val, offset);
 }
 
-void KVEngines::getVZeroCopy(int sfd, int offset, int threadId) {
-    engine[threadId].getVZeroCopy(sfd, offset);
-}
-
-void KVEngines::getVBatch(char * val, int offset, int threadId) {
-    engine[threadId].getVBatch(val, offset);
-}
-
-void KVEngines::getVBatchZeroCopy(int sfd, int offset, int threadId) {
-    engine[threadId].getVBatchZeroCopy(sfd, offset);
+void KVEngines::getVRandom(char * val, int offset, int threadId) {
+    engine[threadId].getVRandom(val, offset);
 }
 
 char * KVEngines::getK(int threadId) {

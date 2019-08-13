@@ -104,11 +104,11 @@ void TcpServer::processRecv(int ssfd, std::shared_ptr<RpcProcess> process) {
         int nRecvBuf= 1 * 1024 * 1024;//设置为1M
         setsockopt(sfd,SOL_SOCKET,SO_RCVBUF,(const char*)&nRecvBuf,sizeof(int));
         //发送缓冲区
-        int nSendBuf= 16 * 1024 * 1024;//设置为16M
+        int nSendBuf= 1 * 1024 * 1024;//设置为16M
         setsockopt(sfd,SOL_SOCKET,SO_SNDBUF,(const char*)&nSendBuf,sizeof(int));
 
         char * recv_buf = new char[MAX_PACKET_SIZE];
-        char * send_buf = new char[max(MAX_PACKET_SIZE, SEQREAD_CACHE_SIZE)];
+        char * send_buf = new char[MAX_PACKET_SIZE];
 
         while (1) {
             int rc = recvPack(sfd, recv_buf);
