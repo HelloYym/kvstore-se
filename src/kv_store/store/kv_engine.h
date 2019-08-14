@@ -76,6 +76,10 @@ public:
         kvLog->preadValueRandom((size_t)offset, val);
     }
 
+    void pre_read_value() {
+        kvLog->pre_read_value();
+    }
+
     void resetKeyPosition() {
         kvLog->resetKeyPosition();
     }

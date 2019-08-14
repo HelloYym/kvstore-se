@@ -6,29 +6,50 @@
 
 class KVEngines{
 public:
-    KVEngines();
-    //调用它进行初始化，初始化一个实例
-    bool Init(const char * dir);
 
-    void Close();
+    bool Init(const char * dir) {
+        this->engine = new KVEngine[THREAD_NUM];
+        printf("THREAD NUM : %d\n", THREAD_NUM);
+        for (int id = 0; id < THREAD_NUM ; ++id) {
+            engine[id].init(dir, id);
+        }
+        return true;
+    }
+    
+    void Close() {
+        for (int id = 0; id < THREAD_NUM ; ++id) {
+            engine[id].close();
+        }
+    }
 
-    //根据线程id 存储key和value
-    void putKV(char * key, char * val, int threadId);
+    void putKV(char* key, char * val, int threadId) {
+        engine[threadId].putKV(key, val);
+    }
 
-    //根据线程id 和 offset 获取 value
-    void getV(char * val, int offset, int threadId);
+    void getV(char * val, int offset, int threadId) {
+        engine[threadId].getV(val, offset);
+    }
 
-    void getVRandom(char * val, int offset, int threadId);
+    void getVRandom(char * val, int offset, int threadId) {
+        engine[threadId].getVRandom(val, offset);
+    }
 
-    //下面三个函数是重启恢复位置。
-    // 先调用第一个函数，再循环调用第二个直到false，最后调用最后一个函数。
-    void resetKeyPosition(int threadId);
+    void pre_read_value(int threadId) {
+        engine[threadId].pre_read_value();
+    }
 
-    //根据线程id 和 offset 获取 key
-    //返回key是否读到末尾，false为末尾
-    char * getK(int threadId);
+    char * getK(int threadId) {
+        return engine[threadId].getK();
+    }
 
-    void recoverKeyPosition(int sum, int threadId);
+    void resetKeyPosition(int threadId) {
+        return engine[threadId].resetKeyPosition();
+    }
+
+    void recoverKeyPosition(int sum, int threadId) {
+        return engine[threadId].recoverKeyPosition(sum);
+    }
+
 
 
 private:

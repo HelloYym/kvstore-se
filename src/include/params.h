@@ -13,13 +13,17 @@ const size_t VALUE_LOG_SIZE = NUM_PER_SLOT * VALUE_SIZE;
 const size_t KEY_LOG_SIZE = NUM_PER_SLOT * KEY_SIZE;
 //hash的容量
 const size_t HASH_CAPACITY = 2 * NUM_PER_SLOT / HASH_NUM * THREAD_NUM;
+
 //写缓存大小（多少块4KB）
-const size_t PAGE_PER_BLOCK = 16;
+const size_t PAGE_PER_BLOCK = 32;
+
 //写缓存大小
 const size_t BLOCK_SIZE = PAGE_PER_BLOCK * VALUE_SIZE;
 
 //读缓存大小（多少块4KB）
 const int READ_CACHE_SIZE = 256 * 16;
+const int PRE_READ_NUM = 16;
+
 
 const size_t KEY_NUM_TCP = 128;//一次最多传输KEY的数量
 

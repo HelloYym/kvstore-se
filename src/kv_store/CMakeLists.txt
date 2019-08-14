@@ -18,8 +18,7 @@ link_directories(
 set(SRC_KVSTORE
     ${SRC_BASE}/kv_store.cc
     ${SRC_BASE}/tcp_server.cc
-    ${SRC_BASE}/rpc_process.cc
-    ${SRC_BASE}/store/kv_engines.cc)
+    ${SRC_BASE}/rpc_process.cc)
 
 add_executable(${PROJECT_NAME} ${SRC_KVSTORE})
 target_link_libraries(${PROJECT_NAME} libnanomsg.a pthread anl)
