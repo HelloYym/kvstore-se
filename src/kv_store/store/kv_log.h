@@ -35,28 +35,33 @@ private:
     char *cacheBuffer;
     size_t cacheBufferPosition;
 
-    //当前读缓存块是从第几个开始
-    long readCacheStartNo;
+    // 顺序读 buffer
+    char *value_buf = nullptr;
+    uint32_t value_buf_start_index;
 
-    // 10M buf
+    // 随机读 buffer
     char *value_buf_head = nullptr;
     uint32_t value_buf_head_start_index;
     char *value_buf_tail = nullptr;
     uint32_t value_buf_tail_start_index;
 
+
 public:
     KVLog(const int &fd, char *cacheBuffer, u_int64_t *keyBuffer) :
             fd(fd), filePosition(0),
             keyBuffer(keyBuffer), keyBufferPosition(0),
-            cacheBuffer(cacheBuffer), cacheBufferPosition(0),
-            readCacheStartNo(LONG_MIN) {
+            cacheBuffer(cacheBuffer), cacheBufferPosition(0) {
     }
 
     ~KVLog() {
-        if (value_buf_head != nullptr) {
+        if (value_buf_head != nullptr)
             delete[] value_buf_head;
+
+        if (value_buf_tail != nullptr)
             delete[] value_buf_tail;
-        }
+
+        if (value_buf != nullptr)
+            delete[] value_buf;
     }
 
 
@@ -75,39 +80,32 @@ public:
         }
     }
 
-    inline void preadValue(size_t pos, char *value, char *buffer) {
-        int indexInReadBuffer = readValue(pos, buffer);
-        memcpy(value, buffer + indexInReadBuffer * VALUE_SIZE, VALUE_SIZE);
+    inline void preadValue(uint32_t index, char *value) {
+
+        if (cacheBufferPosition > 0) {
+            printf("write mmap to file\n");
+            pwrite(this->fd, cacheBuffer, cacheBufferPosition * VALUE_SIZE, filePosition);
+            filePosition += BLOCK_SIZE;
+            cacheBufferPosition = 0;
+        }
+
+        if (value_buf == nullptr) {
+            value_buf = static_cast<char *> (memalign((size_t) getpagesize(), VALUE_SIZE * READ_CACHE_SIZE));
+            value_buf_start_index = UINT32_MAX;
+        }
+
+        uint32_t current_buf_no = index / READ_CACHE_SIZE;
+
+        if (current_buf_no != value_buf_start_index / READ_CACHE_SIZE) {
+            value_buf_start_index = current_buf_no * READ_CACHE_SIZE;
+            pread(this->fd, value_buf, VALUE_SIZE * READ_CACHE_SIZE, (value_buf_start_index * VALUE_SIZE));
+        }
+
+        uint32_t value_buf_offset = index % READ_CACHE_SIZE;
+        memcpy(value, value_buf + value_buf_offset * VALUE_SIZE, VALUE_SIZE);
+
     }
 
-    //返回值是要读的值是读缓存块的第几个
-    inline int readValue(size_t index, char *value) {
-        //如果要读的value在mmap中
-        if (this->filePosition <= index * VALUE_SIZE) {
-            auto pos = index % PAGE_PER_BLOCK;
-            memcpy(value, cacheBuffer + (pos * VALUE_SIZE), VALUE_SIZE);
-            readCacheStartNo = LONG_MIN;
-            return 0;
-        }
-            //这里就是读valueLog
-        else {
-            //如果当前要读的命中读缓存块
-            size_t now = index / SEQ_READ_CACHE_SIZE;
-            if (now == readCacheStartNo / SEQ_READ_CACHE_SIZE) {
-                return index % SEQ_READ_CACHE_SIZE;
-            }
-                //如果没命中
-            else {
-                readCacheStartNo = now * SEQ_READ_CACHE_SIZE;
-                size_t cap = VALUE_SIZE * SEQ_READ_CACHE_SIZE;
-                if (keyBufferPosition - readCacheStartNo < SEQ_READ_CACHE_SIZE) {
-                    cap = (keyBufferPosition - readCacheStartNo) * VALUE_SIZE;
-                }
-                pread(this->fd, value, cap, (readCacheStartNo * VALUE_SIZE));
-                return index % SEQ_READ_CACHE_SIZE;
-            }
-        }
-    }
 
     // TODO: 第三阶段随机读  因为dio要用对齐的地址才可以读的
     inline void preadValueRandom(uint32_t index, char *value) {
@@ -118,7 +116,7 @@ public:
             filePosition += BLOCK_SIZE;
             cacheBufferPosition = 0;
         }
-        
+
         if (value_buf_head == nullptr) {
             printf("create 2 buffer\n");
             value_buf_head = static_cast<char *> (memalign((size_t) getpagesize(), READ_CACHE_SIZE * VALUE_SIZE));
@@ -134,7 +132,8 @@ public:
 
             if (current_buf_no > value_buf_tail_start_index / READ_CACHE_SIZE) {
 
-                printf("warning!!! value read back: %d %d %d\n", current_buf_no, value_buf_tail_start_index / READ_CACHE_SIZE,
+                printf("warning!!! value read back: %d %d %d\n", current_buf_no,
+                       value_buf_tail_start_index / READ_CACHE_SIZE,
                        value_buf_head_start_index / READ_CACHE_SIZE);
 
                 pread(this->fd, value, VALUE_SIZE, (index * VALUE_SIZE));

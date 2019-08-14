@@ -17,10 +17,9 @@ const size_t HASH_CAPACITY = 2 * NUM_PER_SLOT / HASH_NUM * THREAD_NUM;
 const size_t PAGE_PER_BLOCK = 16;
 //写缓存大小
 const size_t BLOCK_SIZE = PAGE_PER_BLOCK * VALUE_SIZE;
-//顺序读缓存大小（多少块4KB）
-const int SEQ_READ_CACHE_SIZE = 256 * 16;
-//随机读缓存大小（多少块4KB）
-const int READ_CACHE_SIZE = 256 * 10;
+
+//读缓存大小（多少块4KB）
+const int READ_CACHE_SIZE = 256 * 16;
 
 const size_t KEY_NUM_TCP = 128;//一次最多传输KEY的数量
 

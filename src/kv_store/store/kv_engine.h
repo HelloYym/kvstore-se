@@ -62,7 +62,7 @@ public:
 
 //        this->start = now();
 
-        kvLog->preadValue((size_t)offset, val, readBuffer.get());
+        kvLog->preadValue((size_t)offset, val);
 
 //        gTime += (now() - start).count();
 //        if (getTimes % 100000 == 0 && getTimes > 0) {
@@ -90,9 +90,6 @@ public:
 
 
 private:
-    //读缓存
-    std::unique_ptr<char> readBuffer =
-            unique_ptr<char>(static_cast<char *> (memalign((size_t) getpagesize(), VALUE_SIZE * SEQ_READ_CACHE_SIZE)));
 
     KVFile * kvFile = nullptr;
     KVLog * kvLog = nullptr;
