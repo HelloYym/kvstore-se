@@ -15,7 +15,7 @@ const size_t KEY_LOG_SIZE = NUM_PER_SLOT * KEY_SIZE;
 const size_t HASH_CAPACITY = 2 * NUM_PER_SLOT / HASH_NUM * THREAD_NUM;
 
 //写缓存大小（多少块4KB）
-const size_t PAGE_PER_BLOCK = 32;
+const size_t PAGE_PER_BLOCK = 16;
 
 //写缓存大小
 const size_t BLOCK_SIZE = PAGE_PER_BLOCK * VALUE_SIZE;

@@ -51,7 +51,7 @@ void RpcProcess::processGetV(int sfd, Packet * buf, char * send_buf) {
 
     kv_engines.getV(send_buf, offset, threadId);
     send(sfd, send_buf, VALUE_SIZE, 0);
-    kv_engines.pre_read_value(threadId);
+    // kv_engines.pre_read_value(threadId);
 }
 
 void RpcProcess::processGetVRandom(int sfd, Packet * buf, char * send_buf) {
