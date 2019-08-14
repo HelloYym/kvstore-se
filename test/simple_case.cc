@@ -120,22 +120,22 @@ double SimpleCase::Run(int thread_num, const char * url, int times, int &err) {
         err += rets[i].get();
     }
 
-    // for read again
-    int prefix;
-    for (int i = 0; i < thread_num; i ++) {
-        std::packaged_task<int ()> task(std::bind(&SimpleCase::runJobRead, this, i,
-                    prefixs[(i + thread_num / 2) % thread_num ], url, times / thread_num));
-        rets[i] = task.get_future();
-        thds[i] = std::thread(std::move(task));
-    }
-    for (int i = 0; i < thread_num; i ++) {
-        thds[i].join();
-    }
-
-    for (int i = 0; i < thread_num; i ++) {
-        err += rets[i].get();
-    }
-
+    /* // for read again */
+    // int prefix;
+    // for (int i = 0; i < thread_num; i ++) {
+    //     std::packaged_task<int ()> task(std::bind(&SimpleCase::runJobRead, this, i,
+    //                 prefixs[(i + thread_num / 2) % thread_num ], url, times / thread_num));
+    //     rets[i] = task.get_future();
+    //     thds[i] = std::thread(std::move(task));
+    // }
+    // for (int i = 0; i < thread_num; i ++) {
+    //     thds[i].join();
+    // }
+    //
+    // for (int i = 0; i < thread_num; i ++) {
+    //     err += rets[i].get();
+    // }
+/*  */
     return duration_cast<duration<double>>(system_clock::now() - begin).count();
 }
 
@@ -193,7 +193,7 @@ int SimpleCase::read(std::shared_ptr<KVIntf> stor, int prefix, int times) {
     KVString val;
     int64_t base = prefix;
     base <<= 32;
-    for (int i = 0; i < times; i ++) {
+    for (int i = times - 1; i >= 0; i--) {
         auto key = buildKey(i + base);
         stor->Get(key, val);
         if (!(val == buildVal(i)) ) {
