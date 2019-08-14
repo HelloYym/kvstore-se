@@ -40,8 +40,8 @@ bool RpcProcess::Insert(int sfd, Packet * recv_buf, char * send_buf) {
 
 void RpcProcess::processPutKV(int sfd, Packet * buf, char * send_buf) {
     int threadId = *((uint32_t *)buf->buf);
-    kv_engines.putKV(buf->buf + sizeof(uint32_t), buf->buf + sizeof(uint32_t) + KEY_SIZE, threadId);
     send(sfd, "1", 1, 0);
+    kv_engines.putKV(buf->buf + sizeof(uint32_t), buf->buf + sizeof(uint32_t) + KEY_SIZE, threadId);
 }
 
 void RpcProcess::processGetV(int sfd, Packet * buf, char * send_buf) {
