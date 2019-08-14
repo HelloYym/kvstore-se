@@ -13,6 +13,7 @@
 #include <unistd.h>
 #include <mutex>
 #include "params.h"
+#include <malloc.h>
 #include <limits.h>
 #include "kv_string.h"
 #include<sys/types.h>
@@ -36,7 +37,6 @@ private:
 
     //当前读缓存块是从第几个开始
     long readCacheStartNo;
-
 
     // 10M buf
     char *value_buf_head = nullptr;
@@ -92,19 +92,19 @@ public:
             //这里就是读valueLog
         else {
             //如果当前要读的命中读缓存块
-            size_t now = index / READ_CACHE_SIZE;
-            if (now == readCacheStartNo / READ_CACHE_SIZE) {
-                return index % READ_CACHE_SIZE;
+            size_t now = index / SEQ_READ_CACHE_SIZE;
+            if (now == readCacheStartNo / SEQ_READ_CACHE_SIZE) {
+                return index % SEQ_READ_CACHE_SIZE;
             }
                 //如果没命中
             else {
-                readCacheStartNo = now * READ_CACHE_SIZE;
-                size_t cap = VALUE_SIZE * READ_CACHE_SIZE;
-                if (keyBufferPosition - readCacheStartNo < READ_CACHE_SIZE) {
+                readCacheStartNo = now * SEQ_READ_CACHE_SIZE;
+                size_t cap = VALUE_SIZE * SEQ_READ_CACHE_SIZE;
+                if (keyBufferPosition - readCacheStartNo < SEQ_READ_CACHE_SIZE) {
                     cap = (keyBufferPosition - readCacheStartNo) * VALUE_SIZE;
                 }
                 pread(this->fd, value, cap, (readCacheStartNo * VALUE_SIZE));
-                return index % READ_CACHE_SIZE;
+                return index % SEQ_READ_CACHE_SIZE;
             }
         }
     }

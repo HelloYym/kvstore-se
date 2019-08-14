@@ -92,7 +92,7 @@ public:
 private:
     //读缓存
     std::unique_ptr<char> readBuffer =
-            unique_ptr<char>(static_cast<char *> (memalign((size_t) getpagesize(), VALUE_SIZE * READ_CACHE_SIZE)));
+            unique_ptr<char>(static_cast<char *> (memalign((size_t) getpagesize(), VALUE_SIZE * SEQ_READ_CACHE_SIZE)));
 
     KVFile * kvFile = nullptr;
     KVLog * kvLog = nullptr;
