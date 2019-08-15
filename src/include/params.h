@@ -21,8 +21,8 @@ const size_t PAGE_PER_BLOCK = 16;
 const size_t BLOCK_SIZE = PAGE_PER_BLOCK * VALUE_SIZE;
 
 //读缓存大小（多少块4KB）
-const int READ_CACHE_SIZE = 256 * 16;
-const int PRE_READ_NUM = 16;
+const int READ_CACHE_SIZE = 256 * 10;
+const int PRE_READ_NUM = 8;
 
 
 const size_t KEY_NUM_TCP = 128;//一次最多传输KEY的数量

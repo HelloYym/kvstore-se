@@ -42,7 +42,7 @@ public:
     bool isInStep1;//判断是否在校验阶段
 
     void init() {
-        this->kvHash = (KVHash **) malloc(HASH_NUM * sizeof(HashLog *));
+        this->kvHash = (KVHash **) malloc(HASH_NUM * sizeof(KVHash *));
         for (int i = 0; i < HASH_NUM; i++) {
             kvHash[i] = new KVHash(HASH_CAPACITY);
         }
