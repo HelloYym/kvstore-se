@@ -5,7 +5,7 @@
 
 const size_t THREAD_NUM = 16;
 const size_t HASH_NUM = 16;
-const size_t NUM_PER_SLOT = 4 * 1024 * 1024;
+const size_t NUM_PER_SLOT = 4 * 1024 * 32;
 
 const size_t KEY_SIZE = 8;
 const size_t VALUE_SIZE = 4096;

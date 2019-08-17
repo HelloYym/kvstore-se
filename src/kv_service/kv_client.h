@@ -305,7 +305,7 @@ private:
                         if (p % SEND_CNT == 0) {
                             sendGetBatchValue(p);
                         }
-                        recv_bytes(fd, value_buf_tail + p * VALUE_SIZE, VALUE_SIZE);
+                        recv_bytes(fd, value_buf_tail + (p - value_buf_tail_start_index) * VALUE_SIZE, VALUE_SIZE);
                     }
                 } else {
                     printf("warning!!! value read back: %d %d %d\n", current_buf_no,
@@ -327,7 +327,7 @@ private:
                     if (p % SEND_CNT == 0) {
                         sendGetBatchValue(p);
                     }
-                    recv_bytes(fd, value_buf_head + p * VALUE_SIZE, VALUE_SIZE);
+                    recv_bytes(fd, value_buf_head + (p - value_buf_head_start_index) * VALUE_SIZE, VALUE_SIZE);
                 }
             }
 
