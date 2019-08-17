@@ -59,6 +59,8 @@ public:
         value_buf_tail = new char[CLIENT_READ_CACHE_SIZE * VALUE_SIZE];
         value_buf_tail_start_index = UINT32_MAX;
 
+        random_pre_read = false;
+
         setTimes = 0;
         getTimes = 0;
 
@@ -80,7 +82,7 @@ public:
         int on = 1;
         setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, (void *) &on, sizeof(on));
         // 接收缓冲区
-        int nRecvBuf = 16 * 1024 * 1024;//设置为16M
+        int nRecvBuf = 32 * 1024 * 1024;//设置为16M
         setsockopt(fd, SOL_SOCKET, SO_RCVBUF, (const char *) &nRecvBuf, sizeof(int));
         //发送缓冲区
         int nSendBuf = 1 * 1024 * 1024;//设置为1M
@@ -196,6 +198,8 @@ private:
     char *value_buf_tail = nullptr;
     uint32_t value_buf_tail_start_index;
 
+    bool random_pre_read = false;
+
 
     int fd;
     struct sockaddr_in server_addr;
@@ -291,9 +295,11 @@ private:
                     sendGetBatchValue(next_pos);
 
                     if (value_buf_tail_start_index + CLIENT_READ_CACHE_SIZE > nums) {
-                        for (uint32_t p = value_buf_tail_start_index; p < nums; p++) {
-                            recv_bytes(fd, value_buf_tail + (p - value_buf_tail_start_index) * VALUE_SIZE, VALUE_SIZE);
-                        }
+                        recv_bytes(fd, value_buf_tail, (nums - value_buf_tail_start_index) * VALUE_SIZE);
+
+//                        for (uint32_t p = value_buf_tail_start_index; p < nums; p++) {
+//                            recv_bytes(fd, value_buf_tail + (p - value_buf_tail_start_index) * VALUE_SIZE, VALUE_SIZE);
+//                        }
                     } else {
                         recv_bytes(fd, value_buf_tail, CLIENT_READ_CACHE_SIZE * VALUE_SIZE);
                     }
@@ -313,15 +319,26 @@ private:
                 value_buf_head_start_index = current_buf_no * CLIENT_READ_CACHE_SIZE;
                 uint32_t next_pos = (pos & 0xF0000000) + value_buf_head_start_index;
 
-                sendGetBatchValue(next_pos);
+                if (!random_pre_read)
+                    sendGetBatchValue(next_pos);
 
                 if (value_buf_head_start_index + CLIENT_READ_CACHE_SIZE > nums) {
-                    for (uint32_t p = value_buf_head_start_index; p < nums; p++) {
-                        recv_bytes(fd, value_buf_head + (p - value_buf_head_start_index) * VALUE_SIZE, VALUE_SIZE);
-                    }
+                    recv_bytes(fd, value_buf_head, (nums - value_buf_head_start_index) * VALUE_SIZE);
+//                    for (uint32_t p = value_buf_head_start_index; p < nums; p++) {
+//                        recv_bytes(fd, value_buf_head + (p - value_buf_head_start_index) * VALUE_SIZE, VALUE_SIZE);
+//                    }
                 } else {
                     recv_bytes(fd, value_buf_head, CLIENT_READ_CACHE_SIZE * VALUE_SIZE);
                 }
+
+                if (value_buf_head_start_index >= CLIENT_READ_CACHE_SIZE) {
+                    next_pos = (pos & 0xF0000000) + (value_buf_head_start_index - CLIENT_READ_CACHE_SIZE);
+                    random_pre_read = true;
+                    sendGetBatchValue(next_pos);
+                } else {
+                    random_pre_read = false;
+                }
+
             }
 
         }
