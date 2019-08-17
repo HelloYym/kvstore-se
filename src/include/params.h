@@ -23,7 +23,7 @@ const size_t BLOCK_SIZE = PAGE_PER_BLOCK * VALUE_SIZE;
 //读缓存大小（多少块4KB）
 const int READ_CACHE_SIZE = 256 * 16;
 
-const int SEND_CNT = 8;
+const int SEND_CNT = 4096;
 const int SPIN_PERIOD = 10000;
 
 

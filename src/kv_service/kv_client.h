@@ -35,6 +35,8 @@ public:
         close(fd);
         delete [] sendBuf;
         delete [] recvBuf;
+        delete [] value_buf_head;
+        delete [] value_buf_tail;
         HashLog::getInstance().close();
         printf("Client close over %d\n", id);
     }
@@ -51,6 +53,12 @@ public:
 
         sendBuf = new char[MAX_PACKET_SIZE];
         recvBuf = new char[MAX_PACKET_SIZE];
+
+        value_buf_head = new char[READ_CACHE_SIZE * VALUE_SIZE];
+        value_buf_head_start_index = UINT32_MAX;
+        value_buf_tail = new char[READ_CACHE_SIZE * VALUE_SIZE];
+        value_buf_tail_start_index = UINT32_MAX;
+
         setTimes = 0;
         getTimes = 0;
 
@@ -156,7 +164,8 @@ public:
         if (!isInStep3 && !isInStep2) {
             getValueCheck(pos, val); //校验阶段采用
         } else if (isInStep3) {
-            getValueRandom(pos, val); //第三阶段采用
+//            getValueRandom(pos, val); //第三阶段采用
+            getValueRandomFromBuffer(pos, val); //第三阶段采用
         } else if (isInStep2){
             getValue(pos, val); //第二阶段采用
         }
@@ -181,6 +190,14 @@ private:
 
     char *sendBuf;
     char *recvBuf;
+
+    // 随机读 buffer
+    char *value_buf_head = nullptr;
+    uint32_t value_buf_head_start_index;
+    char *value_buf_tail = nullptr;
+    uint32_t value_buf_tail_start_index;
+
+
     int fd;
     struct sockaddr_in server_addr;
     uint32_t nums;
@@ -228,7 +245,7 @@ private:
     int getValueCheck(uint32_t pos, KVString &val) {
         auto &send_pkt = *(Packet *) sendBuf;
         send_pkt.len = sizeof(uint32_t) + PACKET_HEADER_SIZE;
-        send_pkt.type = KV_OP_GET_V_CHECK;
+        send_pkt.type = KV_OP_GET_ONE_V;
         memcpy(send_pkt.buf, (char *) &pos, sizeof(uint32_t));
         sendPack(fd, sendBuf);
 
@@ -240,13 +257,8 @@ private:
     }
 
     int getValue(uint32_t pos, KVString &val) {
-
         if (pos % SEND_CNT == 0) {
-            auto &send_pkt = *(Packet *) sendBuf;
-            send_pkt.len = sizeof(uint32_t) + PACKET_HEADER_SIZE;
-            send_pkt.type = KV_OP_GET_V_12;
-            memcpy(send_pkt.buf, (char *) &pos, sizeof(uint32_t));
-            sendPack(fd, sendBuf);
+            sendGetBatchValue(pos);
         }
 
         char *v = new char[VALUE_SIZE];
@@ -254,6 +266,14 @@ private:
         val.Reset(v, VALUE_SIZE);
 
         return 1;
+    }
+
+    void sendGetBatchValue(uint32_t pos) {
+        auto &send_pkt = *(Packet *) sendBuf;
+        send_pkt.len = sizeof(uint32_t) + PACKET_HEADER_SIZE;
+        send_pkt.type = KV_OP_GET_V_12;
+        memcpy(send_pkt.buf, (char *) &pos, sizeof(uint32_t));
+        sendPack(fd, sendBuf);
     }
 
     int getValueRandom(uint32_t pos, KVString &val) {
@@ -267,6 +287,66 @@ private:
         recv_bytes(fd, v, VALUE_SIZE);
         val.Reset(v, VALUE_SIZE);
 
+        return 1;
+    }
+
+    int getValueRandomFromBuffer(uint32_t pos, KVString &val) {
+        auto index = pos & 0x0FFFFFFF;
+
+        uint32_t current_buf_no = index / READ_CACHE_SIZE;
+
+        if (current_buf_no != value_buf_head_start_index / READ_CACHE_SIZE &&
+            current_buf_no != value_buf_tail_start_index / READ_CACHE_SIZE) {
+
+            if (current_buf_no > value_buf_tail_start_index / READ_CACHE_SIZE) {
+                if (value_buf_tail_start_index == UINT32_MAX) {
+                    value_buf_tail_start_index = current_buf_no * READ_CACHE_SIZE;
+                    for (auto p = value_buf_tail_start_index; p < value_buf_tail_start_index + READ_CACHE_SIZE; p++) {
+                        if (p % SEND_CNT == 0) {
+                            sendGetBatchValue(p);
+                        }
+                        recv_bytes(fd, value_buf_tail + p * VALUE_SIZE, VALUE_SIZE);
+                    }
+                } else {
+                    printf("warning!!! value read back: %d %d %d\n", current_buf_no,
+                           value_buf_tail_start_index / READ_CACHE_SIZE,
+                           value_buf_head_start_index / READ_CACHE_SIZE);
+                    //Get One Value
+                    getValueCheck(pos, val);
+                }
+            } else {
+                // 交换两个buf
+                char *tmp_value_buf = value_buf_tail;
+                value_buf_tail = value_buf_head;
+                value_buf_head = tmp_value_buf;
+
+                // buf编号直接推进
+                value_buf_tail_start_index = value_buf_head_start_index;
+                value_buf_head_start_index = current_buf_no * READ_CACHE_SIZE;
+                for (auto p = value_buf_head_start_index; p < value_buf_head_start_index + READ_CACHE_SIZE; p++) {
+                    if (p % SEND_CNT == 0) {
+                        sendGetBatchValue(p);
+                    }
+                    recv_bytes(fd, value_buf_head + p * VALUE_SIZE, VALUE_SIZE);
+                }
+            }
+
+        }
+
+        char *current_value_buf;
+        if (current_buf_no == value_buf_head_start_index / READ_CACHE_SIZE)
+            current_value_buf = value_buf_head;
+        else if (current_buf_no == value_buf_tail_start_index / READ_CACHE_SIZE)
+            current_value_buf = value_buf_tail;
+        else {
+            current_value_buf = nullptr;
+            printf("error!!! value buf no error\n");
+        }
+
+        uint32_t value_buf_offset = pos % READ_CACHE_SIZE;
+        char *v = new char[VALUE_SIZE];
+        memcpy(v, current_value_buf + value_buf_offset * VALUE_SIZE, VALUE_SIZE);
+        val.Reset(v, VALUE_SIZE);
         return 1;
     }
 

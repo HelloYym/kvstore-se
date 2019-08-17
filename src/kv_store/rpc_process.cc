@@ -19,7 +19,7 @@ bool RpcProcess::Insert(int sfd, Packet * recv_buf, char * send_buf) {
             processGetVRandom(sfd, recv_buf, send_buf);
             break;
 
-        case KV_OP_GET_V_CHECK:
+        case KV_OP_GET_ONE_V:
             processGetVCheck(sfd, recv_buf, send_buf);
             break;
 
