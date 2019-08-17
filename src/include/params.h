@@ -21,11 +21,13 @@ const size_t PAGE_PER_BLOCK = 16;
 const size_t BLOCK_SIZE = PAGE_PER_BLOCK * VALUE_SIZE;
 
 //读缓存大小（多少块4KB）
-const int READ_CACHE_SIZE = 256 * 10;
-const int PRE_READ_NUM = 8;
+const int READ_CACHE_SIZE = 256 * 16;
+
+const int SEND_CNT = 8;
+const int SPIN_PERIOD = 10000;
 
 
-const size_t KEY_NUM_TCP = 128;//一次最多传输KEY的数量
+const size_t KEY_NUM_TCP = 512;//一次最多传输KEY的数量
 
 const size_t PACKET_HEADER_SIZE = sizeof(uint32_t) + sizeof(uint32_t);
 const size_t MAX_PACKET_SIZE = PACKET_HEADER_SIZE + VALUE_SIZE * 2;

@@ -72,7 +72,7 @@ public:
         int on = 1;
         setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, (void *) &on, sizeof(on));
         // 接收缓冲区
-        int nRecvBuf = 1 * 1024 * 1024;//设置为16M
+        int nRecvBuf = 16 * 1024 * 1024;//设置为16M
         setsockopt(fd, SOL_SOCKET, SO_RCVBUF, (const char *) &nRecvBuf, sizeof(int));
         //发送缓冲区
         int nSendBuf = 1 * 1024 * 1024;//设置为1M
@@ -153,10 +153,12 @@ public:
         }
 
         //ToDo
-        if (isInStep3) {
-            getValueRandom(pos, val);//第三阶段采用
-        } else {
-            getValue(pos, val);//第一、二阶段采用
+        if (!isInStep3 && !isInStep2) {
+            getValueCheck(pos, val); //校验阶段采用
+        } else if (isInStep3) {
+            getValueRandom(pos, val); //第三阶段采用
+        } else if (isInStep2){
+            getValue(pos, val); //第二阶段采用
         }
 
         //print
@@ -223,12 +225,29 @@ private:
         return true;
     }
 
-    int getValue(uint32_t pos, KVString &val) {
+    int getValueCheck(uint32_t pos, KVString &val) {
         auto &send_pkt = *(Packet *) sendBuf;
         send_pkt.len = sizeof(uint32_t) + PACKET_HEADER_SIZE;
-        send_pkt.type = KV_OP_GET_V_12;
+        send_pkt.type = KV_OP_GET_V_CHECK;
         memcpy(send_pkt.buf, (char *) &pos, sizeof(uint32_t));
         sendPack(fd, sendBuf);
+
+        char *v = new char[VALUE_SIZE];
+        recv_bytes(fd, v, VALUE_SIZE);
+        val.Reset(v, VALUE_SIZE);
+
+        return 1;
+    }
+
+    int getValue(uint32_t pos, KVString &val) {
+
+        if (pos % SEND_CNT == 0) {
+            auto &send_pkt = *(Packet *) sendBuf;
+            send_pkt.len = sizeof(uint32_t) + PACKET_HEADER_SIZE;
+            send_pkt.type = KV_OP_GET_V_12;
+            memcpy(send_pkt.buf, (char *) &pos, sizeof(uint32_t));
+            sendPack(fd, sendBuf);
+        }
 
         char *v = new char[VALUE_SIZE];
         recv_bytes(fd, v, VALUE_SIZE);
@@ -279,35 +298,11 @@ private:
         }
     }
 
-    int recvPack(int fd, char *buf) {
-        auto bytes = recv(fd, buf, MAX_PACKET_SIZE, 0);
-        if (bytes <= 0) {
-            return bytes;
-        }
-        while (bytes < sizeof(int)) {
-            auto b = recv(fd, buf + bytes, MAX_PACKET_SIZE, 0);
-            if (b <= 0) {
-                return b;
-            }
-            bytes += b;
-        }
-        int total = *(int *) buf;
-        while (total != bytes) {
-            auto b = recv(fd, buf + bytes, MAX_PACKET_SIZE, 0);
-            if (b <= 0) {
-                return b;
-            }
-            bytes += b;
-        }
-
-        return total;
-    }
-
     int recv_bytes(int fd, char *buf, int total) {
         int bytes = 0;
 
         while (total != bytes) {
-            auto b = recv(fd, buf + bytes, MAX_PACKET_SIZE, 0);
+            auto b = recv(fd, buf + bytes, total - bytes, 0);
             if (b <= 0) {
                 return -1;
             }

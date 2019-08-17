@@ -19,6 +19,10 @@ bool RpcProcess::Insert(int sfd, Packet * recv_buf, char * send_buf) {
             processGetVRandom(sfd, recv_buf, send_buf);
             break;
 
+        case KV_OP_GET_V_CHECK:
+            processGetVCheck(sfd, recv_buf, send_buf);
+            break;
+
         case KV_OP_RESET_K:
             processResetKeyPosition(sfd, recv_buf, send_buf);
             break;
@@ -44,14 +48,28 @@ void RpcProcess::processPutKV(int sfd, Packet * buf, char * send_buf) {
     kv_engines.putKV(buf->buf + sizeof(uint32_t), buf->buf + sizeof(uint32_t) + KEY_SIZE, threadId);
 }
 
-void RpcProcess::processGetV(int sfd, Packet * buf, char * send_buf) {
+void RpcProcess::processGetVCheck(int sfd, Packet * buf, char * send_buf) {
     uint32_t compress = *(uint32_t *)buf->buf;
     int threadId = compress >> 28;
     int offset = compress & 0x0FFFFFFF;
 
     kv_engines.getV(send_buf, offset, threadId);
     send(sfd, send_buf, VALUE_SIZE, 0);
-    kv_engines.pre_read_value(threadId);
+}
+
+void RpcProcess::processGetV(int sfd, Packet * buf, char * send_buf) {
+    uint32_t compress = *(uint32_t *)buf->buf;
+    int threadId = compress >> 28;
+    uint32_t offset = compress & 0x0FFFFFFF;
+
+    for (int i = 0; i < SEND_CNT; i++) {
+        int end_file = kv_engines.getV(send_buf, offset + i, threadId);
+        if (end_file) break;
+
+        send(sfd, send_buf, VALUE_SIZE, 0);
+
+        for (int j = 0; j < SPIN_PERIOD; j++){}
+    }
 }
 
 void RpcProcess::processGetVRandom(int sfd, Packet * buf, char * send_buf) {
@@ -61,7 +79,6 @@ void RpcProcess::processGetVRandom(int sfd, Packet * buf, char * send_buf) {
 
     kv_engines.getVRandom(send_buf, offset, threadId);
     send(sfd, send_buf, VALUE_SIZE, 0);
-    kv_engines.pre_read_value(threadId);
 }
 
 void RpcProcess::processResetKeyPosition(int sfd, Packet * buf, char * send_buf) {

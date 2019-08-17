@@ -45,11 +45,6 @@ private:
     char *value_buf_tail = nullptr;
     uint32_t value_buf_tail_start_index;
 
-    // 预读 buffer
-    char *value_buf_pre_read = nullptr;
-    uint32_t value_buf_pre_read_start_index;
-    uint32_t value_buf_pre_read_current_index;
-
 public:
     KVLog(const int &fd, char *cacheBuffer, u_int64_t *keyBuffer) :
             fd(fd), filePosition(0),
@@ -66,9 +61,6 @@ public:
 
         if (value_buf != nullptr)
             delete[] value_buf;
-
-        if (value_buf_pre_read != nullptr)
-            delete[] value_buf_pre_read;
     }
 
 
@@ -87,37 +79,21 @@ public:
         }
     }
 
-    void pre_read_value() {
-        if (value_buf_pre_read == nullptr || value_buf_pre_read_start_index == UINT32_MAX)
-            return;
+    bool preadValue(uint32_t index, char *value) {
 
-        if (value_buf_pre_read_current_index - value_buf_pre_read_start_index == READ_CACHE_SIZE)
-            return;
-
-        uint32_t value_buf_offset = value_buf_pre_read_current_index % READ_CACHE_SIZE;
-
-        pread(this->fd, value_buf_pre_read + value_buf_offset * VALUE_SIZE, VALUE_SIZE * PRE_READ_NUM,
-              (value_buf_pre_read_current_index * VALUE_SIZE));
-
-        value_buf_pre_read_current_index += PRE_READ_NUM;
-    }
-
-    void preadValue(uint32_t index, char *value) {
+        if (index * VALUE_SIZE > this->filePosition + cacheBufferPosition * VALUE_SIZE)
+            return true;
 
         //如果要读的value在mmap中
         if (this->filePosition <= index * VALUE_SIZE) {
             auto pos = index % PAGE_PER_BLOCK;
             memcpy(value, cacheBuffer + (pos * VALUE_SIZE), VALUE_SIZE);
-            return;
+            return false;
         }
 
         if (value_buf == nullptr) {
             value_buf = static_cast<char *> (memalign((size_t) getpagesize(), VALUE_SIZE * READ_CACHE_SIZE));
             value_buf_start_index = UINT32_MAX;
-
-            value_buf_pre_read = static_cast<char *> (memalign((size_t) getpagesize(), VALUE_SIZE * READ_CACHE_SIZE));
-            value_buf_pre_read_start_index = UINT32_MAX;
-            value_buf_pre_read_current_index = UINT32_MAX;
         }
 
         uint32_t current_buf_no = index / READ_CACHE_SIZE;
@@ -125,25 +101,13 @@ public:
         if (current_buf_no != value_buf_start_index / READ_CACHE_SIZE) {
             value_buf_start_index = current_buf_no * READ_CACHE_SIZE;
 
-            // 预读 buffer 已经满了
-            if (value_buf_pre_read_start_index == value_buf_start_index &&
-                value_buf_pre_read_current_index - value_buf_pre_read_start_index == READ_CACHE_SIZE) {
-
-                // 交换预读的buffer
-                char *tmp_value_buf = value_buf;
-                value_buf = value_buf_pre_read;
-                value_buf_pre_read = tmp_value_buf;
-            } else {
-                pread(this->fd, value_buf, VALUE_SIZE * READ_CACHE_SIZE, (value_buf_start_index * VALUE_SIZE));
-            }
-
-            value_buf_pre_read_start_index = value_buf_start_index + READ_CACHE_SIZE;
-            value_buf_pre_read_current_index = value_buf_pre_read_start_index;
+            pread(this->fd, value_buf, VALUE_SIZE * READ_CACHE_SIZE, (value_buf_start_index * VALUE_SIZE));
         }
 
         uint32_t value_buf_offset = index % READ_CACHE_SIZE;
         memcpy(value, value_buf + value_buf_offset * VALUE_SIZE, VALUE_SIZE);
 
+        return false;
     }
 
 
@@ -163,9 +127,6 @@ public:
             value_buf_head_start_index = UINT32_MAX;
             value_buf_tail = static_cast<char *> (memalign((size_t) getpagesize(), READ_CACHE_SIZE * VALUE_SIZE));
             value_buf_tail_start_index = UINT32_MAX;
-
-            value_buf_pre_read_start_index = UINT32_MAX;
-            value_buf_pre_read_current_index = UINT32_MAX;
         }
 
         uint32_t current_buf_no = index / READ_CACHE_SIZE;
@@ -197,26 +158,8 @@ public:
                 value_buf_tail_start_index = value_buf_head_start_index;
                 value_buf_head_start_index = current_buf_no * READ_CACHE_SIZE;
 
-
-                // 预读 buffer 已经满了
-                if (value_buf_pre_read_start_index == value_buf_head_start_index &&
-                    value_buf_pre_read_current_index - value_buf_pre_read_start_index == READ_CACHE_SIZE) {
-
-                    // 交换预读的buffer
-                    char *tmp_value_buf = value_buf_head;
-                    value_buf_head = value_buf_pre_read;
-                    value_buf_pre_read = tmp_value_buf;
-                } else {
-                    pread(this->fd, value_buf_head, VALUE_SIZE * READ_CACHE_SIZE, (value_buf_head_start_index * VALUE_SIZE));
-                }
-
-                if (value_buf_start_index < READ_CACHE_SIZE) {
-                    value_buf_pre_read_start_index = UINT32_MAX;
-                    value_buf_pre_read_current_index = UINT32_MAX;
-                } else {
-                    value_buf_pre_read_start_index = value_buf_start_index - READ_CACHE_SIZE;
-                    value_buf_pre_read_current_index = value_buf_pre_read_start_index;
-                }
+                pread(this->fd, value_buf_head, VALUE_SIZE * READ_CACHE_SIZE,
+                      (value_buf_head_start_index * VALUE_SIZE));
             }
 
         }

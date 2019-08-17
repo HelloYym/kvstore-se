@@ -26,16 +26,12 @@ public:
         engine[threadId].putKV(key, val);
     }
 
-    void getV(char * val, int offset, int threadId) {
-        engine[threadId].getV(val, offset);
+    bool getV(char * val, int offset, int threadId) {
+        return engine[threadId].getV(val, offset);
     }
 
     void getVRandom(char * val, int offset, int threadId) {
         engine[threadId].getVRandom(val, offset);
-    }
-
-    void pre_read_value(int threadId) {
-        engine[threadId].pre_read_value();
     }
 
     char * getK(int threadId) {

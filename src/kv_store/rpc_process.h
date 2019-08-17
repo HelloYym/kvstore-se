@@ -47,6 +47,8 @@ protected:
 
     void processGetVRandom(int sfd, Packet * buf, char * send_buf);
 
+    void processGetVCheck(int sfd, Packet * buf, char * send_buf);
+
     void processResetKeyPosition(int sfd, Packet * buf, char * send_buf);
 
     void processGetK(int sfd, Packet * buf, char * send_buf);

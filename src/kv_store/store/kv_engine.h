@@ -46,29 +46,11 @@ public:
     }
 
     void putKV(char * key, char * val) {
-
-//        this->start = now();
-
         kvLog->putValueKey(val, key);
-
-//        sTime += (now() - start).count();
-//        if (setTimes % 100000 == 0 && setTimes > 0) {
-//            printf("store write %d. store total time spent is %lims. store average time spent is %lims\n", setTimes, sTime, sTime / setTimes);
-//        }
-//        setTimes++;
     }
 
-    void getV(char * val, int offset) {
-
-//        this->start = now();
-
-        kvLog->preadValue((size_t)offset, val);
-
-//        gTime += (now() - start).count();
-//        if (getTimes % 100000 == 0 && getTimes > 0) {
-//            printf("store read %d. store total time spent is %lims. store average time spent is %lims\n", getTimes, gTime, gTime / getTimes);
-//        }
-//        getTimes++;
+    bool getV(char * val, int offset) {
+        return kvLog->preadValue((size_t)offset, val);
     }
 
     // TODO: 第三阶段随机读
@@ -76,9 +58,6 @@ public:
         kvLog->preadValueRandom((size_t)offset, val);
     }
 
-    void pre_read_value() {
-        kvLog->pre_read_value();
-    }
 
     void resetKeyPosition() {
         kvLog->resetKeyPosition();
