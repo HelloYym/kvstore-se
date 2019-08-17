@@ -36,14 +36,13 @@ private:
     size_t cacheBufferPosition;
 
     // 顺序读 buffer
-    char *value_buf = nullptr;
-    uint32_t value_buf_start_index;
+    char *value_buf_seq = nullptr;
+    uint32_t value_buf_seq_start_index;
 
     // 随机读 buffer
-    char *value_buf_head = nullptr;
-    uint32_t value_buf_head_start_index;
-    char *value_buf_tail = nullptr;
-    uint32_t value_buf_tail_start_index;
+    char *value_buf_random = nullptr;
+    uint32_t value_buf_random_start_index;
+
 
 public:
     KVLog(const int &fd, char *cacheBuffer, u_int64_t *keyBuffer) :
@@ -53,14 +52,11 @@ public:
     }
 
     ~KVLog() {
-        if (value_buf_head != nullptr)
-            delete[] value_buf_head;
+        if (value_buf_seq != nullptr)
+            delete[] value_buf_seq;
 
-        if (value_buf_tail != nullptr)
-            delete[] value_buf_tail;
-
-        if (value_buf != nullptr)
-            delete[] value_buf;
+        if (value_buf_random != nullptr)
+            delete[] value_buf_random;
     }
 
 
@@ -79,10 +75,43 @@ public:
         }
     }
 
-    bool preadValue(uint32_t index, char *value) {
+    bool preadValue(uint32_t index, char * value) {
 
-        if (index * VALUE_SIZE > this->filePosition + cacheBufferPosition * VALUE_SIZE)
+        // mmap 里面有东西
+        if (cacheBufferPosition > 0) {
+            pwrite(this->fd, cacheBuffer, cacheBufferPosition * VALUE_SIZE, filePosition);
+            filePosition += cacheBufferPosition * VALUE_SIZE;
+            cacheBufferPosition = 0;
+        }
+
+        if (index * VALUE_SIZE >= this->filePosition)
             return true;
+
+        if (value_buf_seq == nullptr) {
+            value_buf_seq = static_cast<char *> (memalign((size_t) getpagesize(), VALUE_SIZE * SERVER_READ_CACHE_SIZE));
+            value_buf_seq_start_index = UINT32_MAX;
+        }
+
+        uint32_t current_buf_no = index / SERVER_READ_CACHE_SIZE;
+
+        if (current_buf_no != value_buf_seq_start_index / SERVER_READ_CACHE_SIZE) {
+            value_buf_seq_start_index = current_buf_no * SERVER_READ_CACHE_SIZE;
+            pread(this->fd, value_buf_seq, VALUE_SIZE * SERVER_READ_CACHE_SIZE, (value_buf_seq_start_index * VALUE_SIZE));
+        }
+
+        uint32_t value_buf_offset = index % SERVER_READ_CACHE_SIZE;
+        memcpy(value, value_buf_seq + value_buf_offset * VALUE_SIZE, VALUE_SIZE);
+//        value = static_cast<char *>(value_buf_seq + value_buf_offset * VALUE_SIZE);
+
+        return false;
+    }
+
+    bool preadValueOne(uint32_t index, char *value) {
+
+        //如果要读的value在mmap中
+        if (index * VALUE_SIZE > this->filePosition + cacheBufferPosition * VALUE_SIZE) {
+            return true;
+        }
 
         //如果要读的value在mmap中
         if (this->filePosition <= index * VALUE_SIZE) {
@@ -91,92 +120,11 @@ public:
             return false;
         }
 
-        if (value_buf == nullptr) {
-            value_buf = static_cast<char *> (memalign((size_t) getpagesize(), VALUE_SIZE * READ_CACHE_SIZE));
-            value_buf_start_index = UINT32_MAX;
-        }
-
-        uint32_t current_buf_no = index / READ_CACHE_SIZE;
-
-        if (current_buf_no != value_buf_start_index / READ_CACHE_SIZE) {
-            value_buf_start_index = current_buf_no * READ_CACHE_SIZE;
-
-            pread(this->fd, value_buf, VALUE_SIZE * READ_CACHE_SIZE, (value_buf_start_index * VALUE_SIZE));
-        }
-
-        uint32_t value_buf_offset = index % READ_CACHE_SIZE;
-        memcpy(value, value_buf + value_buf_offset * VALUE_SIZE, VALUE_SIZE);
+        pread(this->fd, value, VALUE_SIZE, (index * VALUE_SIZE));
 
         return false;
     }
 
-
-    // TODO: 第三阶段随机读  因为dio要用对齐的地址才可以读的
-    void preadValueRandom(uint32_t index, char *value) {
-
-        if (cacheBufferPosition > 0) {
-            printf("write mmap to file\n");
-            pwrite(this->fd, cacheBuffer, cacheBufferPosition * VALUE_SIZE, filePosition);
-            filePosition += BLOCK_SIZE;
-            cacheBufferPosition = 0;
-        }
-
-        if (value_buf_head == nullptr) {
-            printf("create 2 buffer\n");
-            value_buf_head = static_cast<char *> (memalign((size_t) getpagesize(), READ_CACHE_SIZE * VALUE_SIZE));
-            value_buf_head_start_index = UINT32_MAX;
-            value_buf_tail = static_cast<char *> (memalign((size_t) getpagesize(), READ_CACHE_SIZE * VALUE_SIZE));
-            value_buf_tail_start_index = UINT32_MAX;
-        }
-
-        uint32_t current_buf_no = index / READ_CACHE_SIZE;
-
-        if (current_buf_no != value_buf_head_start_index / READ_CACHE_SIZE &&
-            current_buf_no != value_buf_tail_start_index / READ_CACHE_SIZE) {
-
-            if (current_buf_no > value_buf_tail_start_index / READ_CACHE_SIZE) {
-                if (value_buf_tail_start_index == UINT32_MAX) {
-                    value_buf_tail_start_index = current_buf_no * READ_CACHE_SIZE;
-                    pread(this->fd, value_buf_tail, VALUE_SIZE * READ_CACHE_SIZE,
-                          (value_buf_tail_start_index * VALUE_SIZE));
-                } else {
-
-                    printf("warning!!! value read back: %d %d %d\n", current_buf_no,
-                           value_buf_tail_start_index / READ_CACHE_SIZE,
-                           value_buf_head_start_index / READ_CACHE_SIZE);
-
-                    pread(this->fd, value, VALUE_SIZE, (index * VALUE_SIZE));
-                    return;
-                }
-            } else {
-                // 交换两个buf
-                char *tmp_value_buf = value_buf_tail;
-                value_buf_tail = value_buf_head;
-                value_buf_head = tmp_value_buf;
-
-                // buf编号直接推进
-                value_buf_tail_start_index = value_buf_head_start_index;
-                value_buf_head_start_index = current_buf_no * READ_CACHE_SIZE;
-
-                pread(this->fd, value_buf_head, VALUE_SIZE * READ_CACHE_SIZE,
-                      (value_buf_head_start_index * VALUE_SIZE));
-            }
-
-        }
-
-        char *current_value_buf;
-        if (current_buf_no == value_buf_head_start_index / READ_CACHE_SIZE)
-            current_value_buf = value_buf_head;
-        else if (current_buf_no == value_buf_tail_start_index / READ_CACHE_SIZE)
-            current_value_buf = value_buf_tail;
-        else {
-            current_value_buf = nullptr;
-            printf("error!!! value buf no error\n");
-        }
-
-        uint32_t value_buf_offset = index % READ_CACHE_SIZE;
-        memcpy(value, current_value_buf + value_buf_offset * VALUE_SIZE, VALUE_SIZE);
-    }
 
     //再次open时恢复写的位置
     void recover(size_t sum) {

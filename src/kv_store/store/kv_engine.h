@@ -53,11 +53,9 @@ public:
         return kvLog->preadValue((size_t)offset, val);
     }
 
-    // TODO: 第三阶段随机读
-    void getVRandom(char * val, int offset) {
-        kvLog->preadValueRandom((size_t)offset, val);
+    bool get_v_one(char * val, int offset) {
+        return kvLog->preadValueOne((size_t)offset, val);
     }
-
 
     void resetKeyPosition() {
         kvLog->resetKeyPosition();

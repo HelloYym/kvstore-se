@@ -54,9 +54,9 @@ public:
         sendBuf = new char[MAX_PACKET_SIZE];
         recvBuf = new char[MAX_PACKET_SIZE];
 
-        value_buf_head = new char[READ_CACHE_SIZE * VALUE_SIZE];
+        value_buf_head = new char[CLIENT_READ_CACHE_SIZE * VALUE_SIZE];
         value_buf_head_start_index = UINT32_MAX;
-        value_buf_tail = new char[READ_CACHE_SIZE * VALUE_SIZE];
+        value_buf_tail = new char[CLIENT_READ_CACHE_SIZE * VALUE_SIZE];
         value_buf_tail_start_index = UINT32_MAX;
 
         setTimes = 0;
@@ -164,7 +164,6 @@ public:
         if (!isInStep3 && !isInStep2) {
             getValueCheck(pos, val); //校验阶段采用
         } else if (isInStep3) {
-//            getValueRandom(pos, val); //第三阶段采用
             getValueRandomFromBuffer(pos, val); //第三阶段采用
         } else if (isInStep2){
             getValue(pos, val); //第二阶段采用
@@ -257,7 +256,7 @@ private:
     }
 
     int getValue(uint32_t pos, KVString &val) {
-        if (pos % SEND_CNT == 0) {
+        if (pos % CLIENT_READ_CACHE_SIZE == 0) {
             sendGetBatchValue(pos);
         }
 
@@ -271,48 +270,37 @@ private:
     void sendGetBatchValue(uint32_t pos) {
         auto &send_pkt = *(Packet *) sendBuf;
         send_pkt.len = sizeof(uint32_t) + PACKET_HEADER_SIZE;
-        send_pkt.type = KV_OP_GET_V_12;
+        send_pkt.type = KV_OP_GET_V_BATCH;
         memcpy(send_pkt.buf, (char *) &pos, sizeof(uint32_t));
         sendPack(fd, sendBuf);
     }
 
-    int getValueRandom(uint32_t pos, KVString &val) {
-        auto &send_pkt = *(Packet *) sendBuf;
-        send_pkt.len = sizeof(uint32_t) + PACKET_HEADER_SIZE;
-        send_pkt.type = KV_OP_GET_V_3;
-        memcpy(send_pkt.buf, (char *) &pos, sizeof(uint32_t));
-        sendPack(fd, sendBuf);
+    void getValueRandomFromBuffer(uint32_t pos, KVString &val) {
+        uint32_t index = pos & 0x0FFFFFFF;
 
-        char *v = new char[VALUE_SIZE];
-        recv_bytes(fd, v, VALUE_SIZE);
-        val.Reset(v, VALUE_SIZE);
+        uint32_t current_buf_no = index / CLIENT_READ_CACHE_SIZE;
 
-        return 1;
-    }
+        if (current_buf_no != value_buf_head_start_index / CLIENT_READ_CACHE_SIZE &&
+            current_buf_no != value_buf_tail_start_index / CLIENT_READ_CACHE_SIZE) {
 
-    int getValueRandomFromBuffer(uint32_t pos, KVString &val) {
-        auto index = pos & 0x0FFFFFFF;
+            if (current_buf_no > value_buf_tail_start_index / CLIENT_READ_CACHE_SIZE) {
 
-        uint32_t current_buf_no = index / READ_CACHE_SIZE;
-
-        if (current_buf_no != value_buf_head_start_index / READ_CACHE_SIZE &&
-            current_buf_no != value_buf_tail_start_index / READ_CACHE_SIZE) {
-
-            if (current_buf_no > value_buf_tail_start_index / READ_CACHE_SIZE) {
                 if (value_buf_tail_start_index == UINT32_MAX) {
-                    value_buf_tail_start_index = current_buf_no * READ_CACHE_SIZE;
-                    for (auto p = value_buf_tail_start_index; p < value_buf_tail_start_index + READ_CACHE_SIZE; p++) {
-                        if (p % SEND_CNT == 0) {
-                            sendGetBatchValue(p);
+                    value_buf_tail_start_index = current_buf_no * CLIENT_READ_CACHE_SIZE;
+                    uint32_t next_pos = (pos & 0xF0000000) + value_buf_tail_start_index;
+                    sendGetBatchValue(next_pos);
+
+                    if (value_buf_tail_start_index + CLIENT_READ_CACHE_SIZE > nums) {
+                        for (uint32_t p = value_buf_tail_start_index; p < nums; p++) {
+                            recv_bytes(fd, value_buf_tail + (p - value_buf_tail_start_index) * VALUE_SIZE, VALUE_SIZE);
                         }
-                        recv_bytes(fd, value_buf_tail + (p - value_buf_tail_start_index) * VALUE_SIZE, VALUE_SIZE);
+                    } else {
+                        recv_bytes(fd, value_buf_tail, CLIENT_READ_CACHE_SIZE * VALUE_SIZE);
                     }
+
                 } else {
-                    printf("warning!!! value read back: %d %d %d\n", current_buf_no,
-                           value_buf_tail_start_index / READ_CACHE_SIZE,
-                           value_buf_head_start_index / READ_CACHE_SIZE);
-                    //Get One Value
                     getValueCheck(pos, val);
+                    return;
                 }
             } else {
                 // 交换两个buf
@@ -322,32 +310,37 @@ private:
 
                 // buf编号直接推进
                 value_buf_tail_start_index = value_buf_head_start_index;
-                value_buf_head_start_index = current_buf_no * READ_CACHE_SIZE;
-                for (auto p = value_buf_head_start_index; p < value_buf_head_start_index + READ_CACHE_SIZE; p++) {
-                    if (p % SEND_CNT == 0) {
-                        sendGetBatchValue(p);
+                value_buf_head_start_index = current_buf_no * CLIENT_READ_CACHE_SIZE;
+                uint32_t next_pos = (pos & 0xF0000000) + value_buf_head_start_index;
+
+                sendGetBatchValue(next_pos);
+
+                if (value_buf_head_start_index + CLIENT_READ_CACHE_SIZE > nums) {
+                    for (uint32_t p = value_buf_head_start_index; p < nums; p++) {
+                        recv_bytes(fd, value_buf_head + (p - value_buf_head_start_index) * VALUE_SIZE, VALUE_SIZE);
                     }
-                    recv_bytes(fd, value_buf_head + (p - value_buf_head_start_index) * VALUE_SIZE, VALUE_SIZE);
+                } else {
+                    recv_bytes(fd, value_buf_head, CLIENT_READ_CACHE_SIZE * VALUE_SIZE);
                 }
             }
 
         }
 
         char *current_value_buf;
-        if (current_buf_no == value_buf_head_start_index / READ_CACHE_SIZE)
+        if (current_buf_no == value_buf_head_start_index / CLIENT_READ_CACHE_SIZE)
             current_value_buf = value_buf_head;
-        else if (current_buf_no == value_buf_tail_start_index / READ_CACHE_SIZE)
+        else if (current_buf_no == value_buf_tail_start_index / CLIENT_READ_CACHE_SIZE)
             current_value_buf = value_buf_tail;
         else {
             current_value_buf = nullptr;
             printf("error!!! value buf no error\n");
         }
 
-        uint32_t value_buf_offset = pos % READ_CACHE_SIZE;
+        uint32_t value_buf_offset = pos % CLIENT_READ_CACHE_SIZE;
         char *v = new char[VALUE_SIZE];
         memcpy(v, current_value_buf + value_buf_offset * VALUE_SIZE, VALUE_SIZE);
         val.Reset(v, VALUE_SIZE);
-        return 1;
+
     }
 
 

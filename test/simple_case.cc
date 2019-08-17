@@ -63,10 +63,7 @@ int SimpleCase::runJobWrite(int no, int prefix, const char * url, int times) {
     int write_err = write(stor, prefix, times);
     stor->Close();
 
-    stor->Init(url, no);
-    int read_err = read(stor, prefix, times);
-    stor->Close();
-    return write_err + read_err;
+    return write_err;
 }
 
 int SimpleCase::runJobRead(int no, int prefix, const char * url, int times) {
@@ -121,21 +118,21 @@ double SimpleCase::Run(int thread_num, const char * url, int times, int &err) {
     }
 
     /* // for read again */
-    // int prefix;
-    // for (int i = 0; i < thread_num; i ++) {
-    //     std::packaged_task<int ()> task(std::bind(&SimpleCase::runJobRead, this, i,
-    //                 prefixs[(i + thread_num / 2) % thread_num ], url, times / thread_num));
-    //     rets[i] = task.get_future();
-    //     thds[i] = std::thread(std::move(task));
-    // }
-    // for (int i = 0; i < thread_num; i ++) {
-    //     thds[i].join();
-    // }
-    //
-    // for (int i = 0; i < thread_num; i ++) {
-    //     err += rets[i].get();
-    // }
-/*  */
+     int prefix;
+     for (int i = 0; i < thread_num; i ++) {
+         std::packaged_task<int ()> task(std::bind(&SimpleCase::runJobRead, this, i,
+                     prefixs[(i + thread_num / 2) % thread_num ], url, times / thread_num));
+         rets[i] = task.get_future();
+         thds[i] = std::thread(std::move(task));
+     }
+     for (int i = 0; i < thread_num; i ++) {
+         thds[i].join();
+     }
+
+     for (int i = 0; i < thread_num; i ++) {
+         err += rets[i].get();
+     }
+
     return duration_cast<duration<double>>(system_clock::now() - begin).count();
 }
 

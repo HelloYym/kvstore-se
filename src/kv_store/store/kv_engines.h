@@ -30,8 +30,9 @@ public:
         return engine[threadId].getV(val, offset);
     }
 
-    void getVRandom(char * val, int offset, int threadId) {
-        engine[threadId].getVRandom(val, offset);
+
+    bool get_v_one(char * val, int offset, int threadId) {
+        return engine[threadId].get_v_one(val, offset);
     }
 
     char * getK(int threadId) {
