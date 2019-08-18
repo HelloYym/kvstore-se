@@ -26,12 +26,12 @@ public:
         engine[threadId].putKV(key, val);
     }
 
-    bool getV(char * val, int offset, int threadId) {
+    bool getV(char * val, uint32_t offset, int threadId) {
         return engine[threadId].getV(val, offset);
     }
 
 
-    bool get_v_one(char * val, int offset, int threadId) {
+    bool get_v_one(char * val, uint32_t offset, int threadId) {
         return engine[threadId].get_v_one(val, offset);
     }
 

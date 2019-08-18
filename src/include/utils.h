@@ -9,7 +9,6 @@
 
 const uint32_t KV_OP_PUT_KV  = 1;
 const uint32_t KV_OP_GET_V_BATCH   = 2;
-const uint32_t KV_OP_GET_V_RANDOM   = 3;
 const uint32_t KV_OP_GET_ONE_V  = 4;
 const uint32_t KV_OP_RESET_K = 5;
 const uint32_t KV_OP_GET_K   = 6;

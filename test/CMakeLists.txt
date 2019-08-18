@@ -9,7 +9,6 @@ SET(SRC_TESTER ${SRC_BASE}/tester.cc
 
 INCLUDE_DIRECTORIES(
     ${SRC_BASE}/../src/include
-    ${SRC_BASE}/../third_party
     )
 
 ADD_EXECUTABLE(${PROJECT_NAME} ${SRC_TESTER})

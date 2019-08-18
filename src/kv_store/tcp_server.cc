@@ -5,9 +5,6 @@
 #include <chrono>
 #include <condition_variable>
 
-//#include "nanomsg/nn.h"
-//#include "nanomsg/tcp.h"
-//#include "nanomsg/reqrep.h"
 #include<sys/types.h>
 #include<sys/socket.h>
 #include<netinet/in.h>
@@ -125,12 +122,10 @@ void TcpServer::processRecv(int ssfd, std::shared_ptr<RpcProcess> process) {
 }
 
 int TcpServer::recvPack(int fd, char * buf) {
-    auto bytes = recv(fd, buf, MAX_PACKET_SIZE, 0);
-    if (bytes <= 0) {
-        return -1;
-    }
+    auto bytes = 0;
+
     while (bytes < sizeof(int)) {
-        auto b = recv(fd, buf + bytes, MAX_PACKET_SIZE, 0);
+        auto b = recv(fd, buf + bytes, sizeof(int) - bytes, 0);
         if (b <= 0) {
             return -1;
         }
@@ -138,7 +133,7 @@ int TcpServer::recvPack(int fd, char * buf) {
     }
     int total = *(int *) buf;
     while (total != bytes) {
-        auto b = recv(fd, buf + bytes, MAX_PACKET_SIZE, 0);
+        auto b = recv(fd, buf + bytes, total - bytes, 0);
         if (b <= 0) {
             return -1;
         }

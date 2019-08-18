@@ -5,20 +5,14 @@ set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -DELPP_NO_DEFAULT_LOG_FILE -DELPP_TH
 
 set(SRC_BASE ${PROJECT_SOURCE_DIR})
 include_directories(
-    ${SRC_BASE}/../../third_party
-    ${SRC_BASE}/../third_party
     ${SRC_BASE}/store
     ${SRC_BASE}/../include
     )
 
-link_directories(
-    ${SRC_BASE}/../third_party/nanomsg
-    )
 
 set(SRC_KVSTORE
     ${SRC_BASE}/kv_store.cc
-    ${SRC_BASE}/tcp_server.cc
-    ${SRC_BASE}/rpc_process.cc)
+    ${SRC_BASE}/tcp_server.cc)
 
 add_executable(${PROJECT_NAME} ${SRC_KVSTORE})
-target_link_libraries(${PROJECT_NAME} libnanomsg.a pthread anl)
+target_link_libraries(${PROJECT_NAME} pthread anl)

@@ -164,11 +164,11 @@ public:
 
         //ToDo
         if (!isInStep3 && !isInStep2) {
-            getValueCheck(pos, val); //校验阶段采用
+            get_value_one(pos, val); //校验阶段采用
         } else if (isInStep3) {
-            getValueRandomFromBuffer(pos, val); //第三阶段采用
+            get_value_from_buffer(pos, val); //第三阶段采用
         } else if (isInStep2){
-            getValue(pos, val); //第二阶段采用
+            get_value(pos, val); //第二阶段采用
         }
 
         //print
@@ -245,7 +245,7 @@ private:
         return true;
     }
 
-    int getValueCheck(uint32_t pos, KVString &val) {
+    int get_value_one(uint32_t pos, KVString &val) {
         auto &send_pkt = *(Packet *) sendBuf;
         send_pkt.len = sizeof(uint32_t) + PACKET_HEADER_SIZE;
         send_pkt.type = KV_OP_GET_ONE_V;
@@ -259,7 +259,7 @@ private:
         return 1;
     }
 
-    int getValue(uint32_t pos, KVString &val) {
+    int get_value(uint32_t pos, KVString &val) {
         if (pos % CLIENT_READ_CACHE_SIZE == 0) {
             sendGetBatchValue(pos);
         }
@@ -279,7 +279,7 @@ private:
         sendPack(fd, sendBuf);
     }
 
-    void getValueRandomFromBuffer(uint32_t pos, KVString &val) {
+    void get_value_from_buffer(uint32_t pos, KVString &val) {
         uint32_t index = pos & 0x0FFFFFFF;
 
         uint32_t current_buf_no = index / CLIENT_READ_CACHE_SIZE;
@@ -296,16 +296,12 @@ private:
 
                     if (value_buf_tail_start_index + CLIENT_READ_CACHE_SIZE > nums) {
                         recv_bytes(fd, value_buf_tail, (nums - value_buf_tail_start_index) * VALUE_SIZE);
-
-//                        for (uint32_t p = value_buf_tail_start_index; p < nums; p++) {
-//                            recv_bytes(fd, value_buf_tail + (p - value_buf_tail_start_index) * VALUE_SIZE, VALUE_SIZE);
-//                        }
                     } else {
                         recv_bytes(fd, value_buf_tail, CLIENT_READ_CACHE_SIZE * VALUE_SIZE);
                     }
 
                 } else {
-                    getValueCheck(pos, val);
+                    get_value_one(pos, val);
                     return;
                 }
             } else {
@@ -324,9 +320,6 @@ private:
 
                 if (value_buf_head_start_index + CLIENT_READ_CACHE_SIZE > nums) {
                     recv_bytes(fd, value_buf_head, (nums - value_buf_head_start_index) * VALUE_SIZE);
-//                    for (uint32_t p = value_buf_head_start_index; p < nums; p++) {
-//                        recv_bytes(fd, value_buf_head + (p - value_buf_head_start_index) * VALUE_SIZE, VALUE_SIZE);
-//                    }
                 } else {
                     recv_bytes(fd, value_buf_head, CLIENT_READ_CACHE_SIZE * VALUE_SIZE);
                 }
@@ -338,9 +331,7 @@ private:
                 } else {
                     random_pre_read = false;
                 }
-
             }
-
         }
 
         char *current_value_buf;
@@ -357,7 +348,6 @@ private:
         char *v = new char[VALUE_SIZE];
         memcpy(v, current_value_buf + value_buf_offset * VALUE_SIZE, VALUE_SIZE);
         val.Reset(v, VALUE_SIZE);
-
     }
 
 

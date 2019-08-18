@@ -39,11 +39,6 @@ private:
     char *value_buf_seq = nullptr;
     uint32_t value_buf_seq_start_index;
 
-    // 随机读 buffer
-    char *value_buf_random = nullptr;
-    uint32_t value_buf_random_start_index;
-
-
 public:
     KVLog(const int &fd, char *cacheBuffer, u_int64_t *keyBuffer) :
             fd(fd), filePosition(0),
@@ -54,9 +49,6 @@ public:
     ~KVLog() {
         if (value_buf_seq != nullptr)
             delete[] value_buf_seq;
-
-        if (value_buf_random != nullptr)
-            delete[] value_buf_random;
     }
 
 
@@ -75,7 +67,7 @@ public:
         }
     }
 
-    bool preadValue(uint32_t index, char * value) {
+    bool preadValue(uint32_t index, char *value) {
 
         // mmap 里面有东西
         if (cacheBufferPosition > 0) {
@@ -96,7 +88,8 @@ public:
 
         if (current_buf_no != value_buf_seq_start_index / SERVER_READ_CACHE_SIZE) {
             value_buf_seq_start_index = current_buf_no * SERVER_READ_CACHE_SIZE;
-            pread(this->fd, value_buf_seq, VALUE_SIZE * SERVER_READ_CACHE_SIZE, (value_buf_seq_start_index * VALUE_SIZE));
+            pread(this->fd, value_buf_seq, VALUE_SIZE * SERVER_READ_CACHE_SIZE,
+                  (value_buf_seq_start_index * VALUE_SIZE));
         }
 
         uint32_t value_buf_offset = index % SERVER_READ_CACHE_SIZE;
@@ -108,7 +101,6 @@ public:
 
     bool preadValueOne(uint32_t index, char *value) {
 
-        //如果要读的value在mmap中
         if (index * VALUE_SIZE > this->filePosition + cacheBufferPosition * VALUE_SIZE) {
             return true;
         }
@@ -119,9 +111,7 @@ public:
             memcpy(value, cacheBuffer + (pos * VALUE_SIZE), VALUE_SIZE);
             return false;
         }
-
         pread(this->fd, value, VALUE_SIZE, (index * VALUE_SIZE));
-
         return false;
     }
 

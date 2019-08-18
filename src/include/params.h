@@ -25,14 +25,12 @@ const int CLIENT_READ_CACHE_SIZE = 256 * 16;
 
 const int SERVER_READ_CACHE_SIZE = 256 * 16;
 
-const int SPIN_PERIOD = 1000;
+const int SPIN_PERIOD = 70;
 
 
 const size_t KEY_NUM_TCP = 512;//一次最多传输KEY的数量
 
 const size_t PACKET_HEADER_SIZE = sizeof(uint32_t) + sizeof(uint32_t);
 const size_t MAX_PACKET_SIZE = PACKET_HEADER_SIZE + VALUE_SIZE * 2;
-////读缓存大小（多少块4KB）
-//const size_t SEQREAD_CACHE_NUM = 1024;
-//const size_t SEQREAD_CACHE_SIZE = SEQREAD_CACHE_NUM * VALUE_SIZE;
+
 #endif //PARAMS_H
